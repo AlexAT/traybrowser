@@ -1,0 +1,77 @@
+object TrayBrowserRootWindow: TTrayBrowserRootWindow
+  Left = 676
+  Height = 300
+  Top = 32
+  Width = 300
+  BorderIcons = []
+  BorderStyle = bsNone
+  DesignTimePPI = 120
+  Position = poDefault
+  LCLVersion = '4.4.0.0'
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  OnWindowStateChange = FormWindowStateChange
+  object TrayIcon: TTrayIcon
+    PopUpMenu = TrayMenu
+    OnClick = TrayIconClick
+    Left = 32
+    Top = 32
+  end
+  object TrayMenu: TPopupMenu
+    OnPopup = TrayMenuPopup
+    Left = 128
+    Top = 32
+    object TrayMenuRetry: TMenuItem
+      Caption = 'Try loading again'
+      Visible = False
+      OnClick = TrayMenuRetryClick
+    end
+    object TrayMenuExit: TMenuItem
+      Caption = 'Exit'
+      OnClick = TrayMenuExitClick
+    end
+  end
+  object AppProps: TApplicationProperties
+    ExceptionDialog = aedOkMessageBox
+    Title = 'TrayBrowser v3.0 by Alex/AT (alex@alex-at.net)'
+    OnQueryEndSession = AppPropsQueryEndSession
+    Left = 232
+    Top = 32
+  end
+  object FocusTimer: TTimer
+    Enabled = False
+    Interval = 250
+    OnTimer = FocusTimerTimer
+    Left = 128
+    Top = 112
+  end
+  object KVQuery: TSQLQuery
+    FieldDefs = <>
+    Database = KVDB
+    Transaction = KVTransaction
+    Params = <>
+    Macros = <>
+    Left = 232
+    Top = 192
+  end
+  object KVTransaction: TSQLTransaction
+    Active = False
+    Database = KVDB
+    Left = 128
+    Top = 192
+  end
+  object KVDB: TSQLite3Connection
+    Connected = False
+    LoginPrompt = False
+    KeepConnection = True
+    Transaction = KVTransaction
+    CharSet = 'utf8'
+    LogEvents = []
+    OpenFlags = [sofReadWrite, sofCreate, sofFullMutex]
+    AlwaysUseBigint = False
+    Left = 32
+    Top = 192
+  end
+end

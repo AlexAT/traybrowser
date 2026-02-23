@@ -1,0 +1,104 @@
+object TrayBrowserWindow: TTrayBrowserWindow
+  Left = 0
+  Height = 300
+  Top = 0
+  Width = 450
+  BorderIcons = []
+  BorderStyle = bsNone
+  Caption = 'TrayBrowser v3.0 by Alex/AT (alex@alex-at.net)'
+  ClientHeight = 300
+  ClientWidth = 450
+  DesignTimePPI = 120
+  Position = poDefault
+  ShowInTaskBar = stNever
+  SnapOptions.Distance = 16
+  LCLVersion = '4.4.0.0'
+  OnActivate = FormActivate
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnDragOver = FormDragOver
+  OnHide = FormHide
+  OnShow = FormShow
+  OnWindowStateChange = FormWindowStateChange
+  object BorderPanel: TPanel
+    Left = 0
+    Height = 300
+    Top = 0
+    Width = 450
+    Align = alClient
+    BevelOuter = bvNone
+    ClientHeight = 300
+    ClientWidth = 450
+    ParentBackground = False
+    ParentColor = False
+    TabOrder = 0
+    object BrowserPanel: TPanel
+      Left = 0
+      Height = 300
+      Top = 0
+      Width = 450
+      Align = alClient
+      BevelOuter = bvNone
+      ClientHeight = 300
+      ClientWidth = 450
+      DragCursor = crArrow
+      ParentBackground = False
+      ParentColor = False
+      TabOrder = 0
+      UseDockManager = False
+      OnDragOver = BrowserPanelDragOver
+      object CEFBrowser: TCEFLinkedWindowParent
+        Left = 0
+        Height = 300
+        Top = 0
+        Width = 450
+        Align = alClient
+        TabOrder = 1
+        DragCursor = crDefault
+        OnDragOver = CEFBrowserDragOver
+      end
+      object CustomDragRegion: TPanel
+        Left = 0
+        Height = 1
+        Top = 0
+        Width = 1
+        BevelColor = clNone
+        BevelOuter = bvNone
+        Color = clNone
+        DragCursor = crArrow
+        DragMode = dmAutomatic
+        ParentBackground = False
+        ParentColor = False
+        TabOrder = 0
+        UseDockManager = False
+        Visible = False
+        OnDragOver = CustomDragRegionDragOver
+        OnEndDrag = CustomDragRegionEndDrag
+        OnStartDrag = CustomDragRegionStartDrag
+      end
+    end
+  end
+  object DragTimer: TTimer
+    Enabled = False
+    Interval = 1
+    OnTimer = DragTimerTimer
+    Left = 144
+    Top = 24
+  end
+  object ServiceTimer: TTimer
+    Enabled = False
+    Interval = 100
+    OnTimer = ServiceTimerTimer
+    Left = 48
+    Top = 24
+  end
+  object JSEventTimer: TTimer
+    Enabled = False
+    Interval = 1
+    OnTimer = JSEventTimerTimer
+    Left = 248
+    Top = 24
+  end
+end

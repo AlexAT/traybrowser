@@ -1,0 +1,17 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>Welcome to TrayBrowser!</title>
+</head>
+<body style="margin: 0; padding: 0; border: 0; overflow: hidden; user-select: none;" onload="{ traybrowser.Show(); document.getElementById('fcopy').innerHTML = 'TrayBrowser ' + trayBrowser.GetVersion() + ' ' + traybrowser.GetCopyright(); }">
+  <div style="width: 100%; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; font-family: system-ui; font-size: 9pt;">
+    <div style="font-size: 10pt;"><b>Welcome to TrayBrowser!</b></div>
+    <div style="margin-top: 2.5em;">This TrayBrowser instance is not configured.</div>
+    <div style="margin-top: 0.5em;">You need to create proper configuration that<br />provides default URL to be loaded by the application.</div>
+    <div style="margin-top: 0.5em;">If you do not know how, please read the documentation at<br /><a href="javascript:;" onclick="traybrowser.OpenBrowser('https://github.com/alex-at/traybrowser/');">https://github.com/alex-at/traybrowser/</a></div>
+    <div style="height: 3em;">&nbsp;</div>
+  </div>
+  <div id="fcopy" style="width: 100%; position: absolute; left: 0; bottom: 4px; text-align: center; font-family: system-ui; font-size: 8pt;">TrayBrowser by Alex/AT (alex@alex-at.net)</div>
+</body>
+</html>

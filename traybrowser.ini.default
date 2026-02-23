@@ -1,0 +1,3 @@
+# This very first configuration file is injected into the application
+# Normally it does not have any settings defined, use for full branding
+# On Windows this can be directly edited under TRAYBROWSER_INI resource
