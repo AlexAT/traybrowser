@@ -1,6 +1,7 @@
-Additional AI usage restrictions are hereby applied to all 3-BSD license source code authored by Alex/AT.
+Additional AI usage restrictions are hereby applied to all 3-BSD licensed source code authored by Alex/AT.
 
 - TrayBrowser code can be put into AI for analysis/scrutiny, for purposes of maintaining code quality.
 - TrayBrowser code cannot be used for training AI models or be rewritten using it as base for AI models.
 - TrayBrowser code cannot be updated or developed using AI models as TrayBrowser code source.
 - All restrictions above do not apply to any other projects reusing TrayBrowser code, but TrayBrowser code bits reused directly must follow the restriction.
+- Purely binary TrayBrowser distributions (including any projects reusing TrayBrowser as base) do not need to retain this restriction list.
