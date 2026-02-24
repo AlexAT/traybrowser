@@ -1,0 +1,5 @@
+Additional AI restrictions
+
+TrayBrowser code can be put into AI for analysis/scrutiny.
+TrayBrowser code cannot be used for training AI models.
+TrayBrowser code cannot be updated using AI models as code source.
