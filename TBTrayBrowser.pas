@@ -669,6 +669,9 @@ begin
   GlobalCEFApp.DeleteCookies := False; // embedded c4d mechanism is not necessary
   GlobalCEFApp.DisableJavascriptAccessClipboard := True; // no, we do not want applications to randomly monitor clipboard
   GlobalCEFApp.DisableJavascriptDomPaste := True; // no DOM paste access
+  GlobalCEFApp.NoFirstRun := True; // nope, not a first run
+  GlobalCEFApp.NoDefaultBrowserCheck := True; // nope, we do not want to become default browser
+  GlobalCEFApp.EnableAutomation := False; // and no, no automation
   GlobalCEFApp.EnablePrintPreview := True;
   GlobalCEFApp.EnableGPU := Settings.EnableGPU;
   GlobalCEFApp.KioskPrinting := Settings.AutoPrint;

@@ -185,8 +185,11 @@ begin
     Chromium.DefaultUrl := '';
     Chromium.Options.ChromeStatusBubble := STATE_DISABLED;
     Chromium.Options.ChromeZoomBubble := STATE_DISABLED;
-    if not(Chromium.CreateBrowser(CEFBrowser, UnicodeString(Caption), nil, FCEFBrowserParams)) then raise Exception.Create('Failed to create browser object');
+    if not (Chromium.CreateBrowser(CEFBrowser, UnicodeString(Caption), nil, FCEFBrowserParams)) then raise Exception.Create('Failed to create browser object');
   end;
+
+  // done
+  FInitialized := True;
 end;
 
 ////////////////////////////////////////////////////////////
@@ -204,14 +207,9 @@ begin
   Navigate(FWindowSettings.URL); // load default page
 end;
 
-procedure TTrayBrowserWindow.ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser);
+procedure TTrayBrowserWindow.BrowserBeforeCloseMsg(var Message: TMessage);
 begin
-  if Assigned(Chromium) then
-  begin
-    if (Chromium.BrowserId <> 0) then Exit; // take care, BrowserId must be 0 for proper termination, meaning all in-page browsers terminated
-    CEFBrowser.Chromium := nil;
-  end;
-
+  CEFBrowser.Chromium := nil;
   if not FIsBrowserRestarting then
   begin
     FExit.CanClose := True;
@@ -219,10 +217,18 @@ begin
   end else
   begin
     FInitialized := False;
-    CEFBrowser.Chromium := nil;
     FreeAndNil(Chromium);
     FIsBrowserRestarting := False;
     InitializeBrowser;
+  end;
+end;
+
+procedure TTrayBrowserWindow.ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser);
+begin
+  if Assigned(Chromium) then
+  begin
+    if (Chromium.BrowserId <> 0) then Exit; // take care, BrowserId must be 0 for proper termination, meaning all in-page browsers terminated
+    PostMessage(Handle, CEF_BEFORECLOSE, 0, 0);
   end;
 end;
 

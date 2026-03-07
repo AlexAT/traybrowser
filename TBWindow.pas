@@ -217,6 +217,7 @@ type
       // browser operations
       procedure InitializeBrowser(const inExistingBrowser: Boolean = False);
       procedure BrowserCreatedMsg(var Message: TMessage); message CEF_AFTERCREATED;
+      procedure BrowserBeforeCloseMsg(var Message: TMessage); message CEF_BEFORECLOSE;
       procedure BrowserOnLoadStartMsg(var Message: TMessage); message TB_MSG_BROWSER_ONLOADSTART;
       procedure BrowserOnRemoteLoadStartMsg(var Message: TMessage); message TB_MSG_BROWSER_ONREMOTELOADSTART;
       procedure BrowserOnLoadErrorMsg(var Message: TMessage); message TB_MSG_BROWSER_ONLOADERROR;
@@ -517,7 +518,6 @@ begin
     FFirstShow.Pending := True;
     PositionOurselves(False, True, SetStartingPosition); // SetStartingPosition returns if we need centering, this call is required to initialize coordinates for JS API
     InitializeBrowser;
-    FInitialized := True;
     if FWindowSettings.ShowOnStart and (not FWindowSettings.KeepHidden) then Visible := True; // show us on startup
   end else
   begin
