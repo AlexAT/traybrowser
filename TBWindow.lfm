@@ -12,7 +12,7 @@ object TrayBrowserWindow: TTrayBrowserWindow
   Position = poDefault
   ShowInTaskBar = stNever
   SnapOptions.Distance = 16
-  LCLVersion = '4.4.0.0'
+  LCLVersion = '4.6.0.0'
   OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery

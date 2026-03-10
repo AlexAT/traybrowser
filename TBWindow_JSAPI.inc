@@ -43,6 +43,8 @@ begin
       'tbSetScaledPosition': LResult := jsSetPosition(inArgc, inRequest, False, False); // browser dots, monitor
       'tbGetDesktopPosition': LResult := jsGetPosition(inArgc, inRequest, True, True); // always pixels, desktop
       'tbSetDesktopPosition': LResult := jsSetPosition(inArgc, inRequest, True, True); // always pixels, desktop
+      'tbGetSavedPosition': LResult := jsGetSavedPosition(inArgc, inRequest);
+      'tbSetSavedPosition': LResult := jsSetSavedPosition(inArgc, inRequest);
 
       // window and screen information
       'tbGetMonitorBrowserSize': LResult := jsGetMonitorSize(inArgc, inRequest, False); // browser dots
@@ -115,8 +117,6 @@ begin
       'tbApplicationShow': LResult := jsApplicationShow(inArgc, inRequest);
       'tbApplicationHide': LResult := jsApplicationHide(inArgc, inRequest);
       'tbApplicationTerminate': LResult := jsApplicationTerminate(inArgc, inRequest);
-      'tbGetSavedPosition': LResult := jsGetSavedPosition(inArgc, inRequest);
-      'tbSetSavedPosition': LResult := jsSetSavedPosition(inArgc, inRequest);
 
       // multiple windows API: window API aliases for remote windows
       'tbWindowShow': jsWindowAPIAlias('tbShow', inArgc, inRequest, inReply);
@@ -513,11 +513,11 @@ begin
     end else Exit; // invalid monitor position
   end;
 
-  if (LPosition.X >= Screen.WorkAreaRect.Left) and (LPosition.Y >= Screen.WorkAreaRect.Top)
-    and (LPosition.X < (Screen.WorkAreaRect.Left + Screen.WorkAreaRect.Width))
-    and (LPosition.Y < (Screen.WorkAreaRect.Top + Screen.WorkAreaRect.Height)) then
+  if (LPosition.X >= Screen.DesktopRect.Left) and (LPosition.Y >= Screen.DesktopRect.Top)
+    and (LPosition.X < (Screen.DesktopRect.Left + Screen.DesktopRect.Width))
+    and (LPosition.Y < (Screen.DesktopRect.Top + Screen.DesktopRect.Height)) then
   begin
-    if FRememberedPosition.Active then FRememberedPosition.Window.Location := FRememberedPosition.Monitor.Location + LPosition else FRememberedPosition.Window.Location := FMonitorInfo.WorkArea.Location + LPosition;
+    FRememberedPosition.Window.Location := LPosition; // remember new position
     if (WindowState <> wsMaximized) then // moving window in maximized state actually works and gives inconsistent results, avoid that
     begin
       FInManualPositionChange := True;

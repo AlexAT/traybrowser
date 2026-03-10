@@ -170,6 +170,7 @@ begin
   Chromium.OnLoadStart := @ChromiumLoadStart;
   Chromium.OnOpenUrlFromTab := @ChromiumOpenUrlFromTab;
   Chromium.OnPreKeyEvent := @ChromiumPreKeyEvent;
+  Chromium.OnShowPermissionPrompt := @ChromiumOnShowPermissionPrompt;
 
   // associate TChromium component with parent window component
   CEFBrowser.Chromium := Chromium;
@@ -378,6 +379,16 @@ begin
         Exit;
       end;
     end;
+  end;
+end;
+
+procedure TTrayBrowserWindow.ChromiumOnShowPermissionPrompt(Sender: TObject; const browser: ICefBrowser; prompt_id: uint64; const requesting_origin: ustring; requested_permissions: cardinal; const callback: ICefPermissionPromptCallback; var aResult: Boolean);
+begin
+  aResult := False;
+  if (requested_permissions and CEF_PERMISSION_TYPE_NOTIFICATIONS) <> 0 then
+  begin
+    callback.Cont(CEF_PERMISSION_RESULT_ACCEPT);
+    aResult := True;
   end;
 end;
 
