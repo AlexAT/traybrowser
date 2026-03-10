@@ -82,12 +82,11 @@ end;
 
 procedure TTrayBrowserWindow.ChromiumLoadStart(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; transitionType: TCefTransitionType);
 begin
-  if FInitialized and Assigned(Chromium) and frame.IsMain then
-  begin
-    // take care here we wait for message completion as we must have stuff clean before accessing new page
-    SendMessage(Handle, TB_MSG_BROWSER_ONLOADSTART, 0, 0);
-    if LowerCase(MidStr(String(frame.Url), 1, 15)) <> 'data:text/html;' then SendMessage(Handle, TB_MSG_BROWSER_ONREMOTELOADSTART, 0, 0); // remote page load starting
-  end;
+  if (not FInitialized) or (not Assigned(Chromium)) or (not Chromium.IsSameBrowser(browser)) or (not frame.IsMain) then Exit;
+
+  // take care here we wait for message completion as we must have stuff clean before accessing new page
+  SendMessage(Handle, TB_MSG_BROWSER_ONLOADSTART, 0, 0);
+  if LowerCase(MidStr(String(frame.Url), 1, 15)) <> 'data:text/html;' then SendMessage(Handle, TB_MSG_BROWSER_ONREMOTELOADSTART, 0, 0); // remote page load starting
 end;
 
 procedure TTrayBrowserWindow.ChromiumLoadError(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; errorCode: TCefErrorCode; const errorText, failedUrl: ustring);
@@ -105,16 +104,15 @@ end;
 
 procedure TTrayBrowserWindow.ChromiumLoadEnd(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; httpStatusCode: Integer);
 begin
-  if FInitialized and Assigned(Chromium) and frame.IsMain then
+  if (not FInitialized) or (not Assigned(Chromium)) or (not Chromium.IsSameBrowser(browser)) or (not frame.IsMain) then Exit;
+
+  if (httpStatusCode >= 400) and (httpStatusCode <= 599) then
   begin
-    if (httpStatusCode >= 400) and (httpStatusCode <= 599) then
-    begin
-      // oopsie-daisy
-      FCEFBrowserOpLock.Acquire;
-      FWindowState.BrowserErrorText := 'ERROR_HTTP_STATUS_CODE_' + IntToStr(httpStatusCode);
-      FCEFBrowserOpLock.Release;
-      PostMessage(Handle, TB_MSG_BROWSER_ONLOADERROR, 0, 0);
-    end;
+    // oopsie-daisy
+    FCEFBrowserOpLock.Acquire;
+    FWindowState.BrowserErrorText := 'ERROR_HTTP_STATUS_CODE_' + IntToStr(httpStatusCode);
+    FCEFBrowserOpLock.Release;
+    PostMessage(Handle, TB_MSG_BROWSER_ONLOADERROR, 0, 0);
   end;
 end;
 
@@ -226,11 +224,8 @@ end;
 
 procedure TTrayBrowserWindow.ChromiumBeforeClose(Sender: TObject; const browser: ICefBrowser);
 begin
-  if Assigned(Chromium) then
-  begin
-    if (Chromium.BrowserId <> 0) then Exit; // take care, BrowserId must be 0 for proper termination, meaning all in-page browsers terminated
-    PostMessage(Handle, CEF_BEFORECLOSE, 0, 0);
-  end;
+  if (not Assigned(Chromium)) or (Chromium.BrowserId <> 0) then Exit; // take care, BrowserId must be 0 for proper termination, meaning all in-page browsers terminated
+  PostMessage(Handle, CEF_BEFORECLOSE, 0, 0);
 end;
 
 procedure TTrayBrowserWindow.ChromiumClose(Sender: TObject; const browser: ICefBrowser; var aAction: TCefCloseBrowserAction);
