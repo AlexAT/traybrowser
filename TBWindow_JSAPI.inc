@@ -877,6 +877,8 @@ begin
     CustomDragRegion.Width := ScaleFromBrowser(LRect.Width, FMonitorInfo.DPI);
     CustomDragRegion.Height := ScaleFromBrowser(LRect.Height, FMonitorInfo.DPI);
     CustomDragRegion.Visible := True;
+    FCustomDrag.Region := CustomDragRegion.BoundsRect;
+    FCustomDrag.Visible := True;
     Result.vBoolean := True;
   end else
   begin

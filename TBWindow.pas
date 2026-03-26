@@ -108,6 +108,8 @@ type
   end;
 
   TTBCustomDragState = record
+    Region: TRect;
+    Visible: Boolean;
     Dragging: Boolean;
     WindowPosition: TPoint; // window position on custom drag region dragging start
     MousePosition: TPoint; // mouse position on custom drag region dragging start
@@ -467,6 +469,9 @@ begin
   FWindowState.ErrorPageLoadNeeded := False;
   FWindowState.RetryTimer := -1;
 
+  FCustomDrag.Region := CustomDragRegion.BoundsRect;
+  FCustomDrag.Visible := False;
+
   FCEFBrowserOpLock := TCriticalSection.Create;
   FWindowState.JSEventQueue := TStringList.Create;
   FWindowState.JSEventQueueLock := TCriticalSection.Create;
@@ -625,6 +630,14 @@ begin
   TTrayBrowserWindow(FWindowSettings.RestartSource).FCEFBrowserParams := nil;
   TTrayBrowserWindow(FWindowSettings.RestartSource).Chromium := nil;
 
+  // restore custom drag region bounds and state, but it needs to be corrected after first show, so get rect in
+  try
+    FCustomDrag.Region := TTrayBrowserWindow(FWindowSettings.RestartSource).CustomDragRegion.BoundsRect;
+    FCustomDrag.Visible := TTrayBrowserWindow(FWindowSettings.RestartSource).CustomDragRegion.Visible;
+    CustomDragRegion.BoundsRect := CustomDragRegion.BoundsRect;
+    CustomDragRegion.Visible := FCustomDrag.Visible;
+  except end;
+
   // we are good to go
   FInitialized := True;
 
@@ -636,12 +649,6 @@ begin
     WindowState := TTrayBrowserWindow(FWindowSettings.RestartSource).WindowState;
   except end;
   FInManualPositionChange := False;
-
-  // restore custom drag region bounds and state
-  try
-    CustomDragRegion.BoundsRect := TTrayBrowserWindow(FWindowSettings.RestartSource).CustomDragRegion.BoundsRect;
-    CustomDragRegion.Visible := TTrayBrowserWindow(FWindowSettings.RestartSource).CustomDragRegion.Visible;
-  except end;
 
   // post restart event (this also starts JS event timer)
   PostJSEvent('"onrestarted"');
@@ -717,6 +724,13 @@ begin
   if FFirstShow.Pending then
   begin
     FFirstShow.Pending := False;
+
+    if FCustomDrag.Visible then
+    begin
+      // this is necessary as on window restarts custom drag region panel is not yet fully initialized when imported
+      CustomDragRegion.BoundsRect := FCustomDrag.Region;
+      CustomDragRegion.Visible := True;
+    end;
 
     if FWindowSettings.Main and (not FWindowSettings.KeepHidden) and (not FFirstShow.Restarting) then
     begin

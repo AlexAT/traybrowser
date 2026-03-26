@@ -23,6 +23,8 @@ begin
   CustomDragRegion.Top := 0;
   CustomDragRegion.Width := 1;
   CustomDragRegion.Height := 1;
+  FCustomDrag.Region := CustomDragRegion.BoundsRect;
+  FCustomDrag.Visible := False;
 end;
 
 procedure TTrayBrowserWindow.CustomDragRegionStartDrag(Sender: TObject; var DragObject: TDragObject);
