@@ -152,7 +152,7 @@ begin
       SettingChoiceDef(Integer(tbbtWindow), 'window')
     ],[
       SettingChoiceDef(Integer(tbbtNormal), 'normal'),
-      SettingChoiceDef(Integer(tbbtBorderless), 'never'), SettingChoiceDef(Integer(tbbtBorderless), '-'), SettingChoiceDef(Integer(tbbtBorderless), 'no'), SettingChoiceDef(Integer(tbbtBorderless), 'none'), SettingChoiceDef(Integer(tbbtBorderless), 'off'), SettingChoiceDef(Integer(tbbtBorderless), 'false'), SettingChoiceDef(Integer(tbbtBorderless), 'disable'), SettingChoiceDef(Integer(tbbtBorderless), 'disabled'), SettingChoiceDef(Integer(tbbtBorderless), 'inactive'), SettingChoiceDef(Integer(tbbtBorderless), 'passive'), SettingChoiceDef(Integer(tbbtBorderless), '0'),
+      SettingChoiceDef(Integer(tbbtBorderless), 'borderless'), SettingChoiceDef(Integer(tbbtBorderless), 'never'), SettingChoiceDef(Integer(tbbtBorderless), '-'), SettingChoiceDef(Integer(tbbtBorderless), 'no'), SettingChoiceDef(Integer(tbbtBorderless), 'none'), SettingChoiceDef(Integer(tbbtBorderless), 'off'), SettingChoiceDef(Integer(tbbtBorderless), 'false'), SettingChoiceDef(Integer(tbbtBorderless), 'disable'), SettingChoiceDef(Integer(tbbtBorderless), 'disabled'), SettingChoiceDef(Integer(tbbtBorderless), 'inactive'), SettingChoiceDef(Integer(tbbtBorderless), 'passive'), SettingChoiceDef(Integer(tbbtBorderless), '0'),
       SettingChoiceDef(Integer(tbbtWindow), 'window'), SettingChoiceDef(Integer(tbbtWindow), 'os')
     ]
   ));
