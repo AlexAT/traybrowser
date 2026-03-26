@@ -596,7 +596,16 @@ begin
   FreeAndNil(FWindowState.JSEventQueueLock);
   FWindowState := TTrayBrowserWindow(FWindowSettings.RestartSource).FWindowState;
 
-  // browser and its parameters are relinked
+  // restore window bounds and state before relinking browser object to make sure browser does not change its size internally
+  FInManualPositionChange := True;
+  FForceWindowState := True;
+  try
+    BoundsRect := TTrayBrowserWindow(FWindowSettings.RestartSource).BoundsRect;
+    WindowState := TTrayBrowserWindow(FWindowSettings.RestartSource).WindowState;
+  except end;
+  FInManualPositionChange := False;
+
+  // relink browser object and its parameters before relinking browser window
   FCEFBrowserParams := TTrayBrowserWindow(FWindowSettings.RestartSource).FCEFBrowserParams;
   Chromium := TTrayBrowserWindow(FWindowSettings.RestartSource).Chromium;
   TTrayBrowserWindow(FWindowSettings.RestartSource).CEFBrowser.Chromium := nil;
@@ -619,7 +628,7 @@ begin
   // we are good to go
   FInitialized := True;
 
-  // restore window bounds and state
+  // restore window bounds and state for second time to inform newly relinked browser to conform
   FInManualPositionChange := True;
   FForceWindowState := True;
   try
