@@ -25,8 +25,9 @@ interface
 
 uses
   Windows, Win32Extra,
+  LCLType, LCLIntf,
   CommCtrl, Messages, SyncObjs, Generics.Collections, Process,
-  Classes, SysUtils, Forms, Controls, Dialogs, ExtCtrls, Buttons, Graphics, ActnList, Menus, StrUtils, Math, htmlelements, LCLIntf, fpjson, RegExpr,
+  Classes, SysUtils, Forms, Controls, Dialogs, ExtCtrls, Buttons, Graphics, ActnList, Menus, StrUtils, Math, htmlelements, fpjson, RegExpr,
   uCEFApplication, uCEFChromium, uCEFLinkedWindowParent, uCEFInterfaces, uCEFConstants, uCEFTypes, uCEFDictionaryValue, uCEFMiscFunctions,
   TBTrayBrowser;
 
@@ -437,8 +438,6 @@ uses
 // window initialization and destruction
 
 procedure TTrayBrowserWindow.FormCreate(Sender: TObject);
-var
-  l: Long;
 begin
   FWindowID := '';
   Chromium := nil;
@@ -485,8 +484,7 @@ begin
 
   {$IFDEF WINDOWS}
   // windows-specific style change to make custom drag region box transparent
-  l := GetWindowLong(CustomDragRegion.Handle, GWL_EXSTYLE);
-  SetWindowLong(CustomDragRegion.Handle, GWL_EXSTYLE, l or WS_EX_TRANSPARENT);
+  SetWindowLong(CustomDragRegion.Handle, GWL_EXSTYLE, GetWindowLong(CustomDragRegion.Handle, GWL_EXSTYLE) or WS_EX_TRANSPARENT);
 
   // windows-specific WndProc hook for positioning and prevention of minimize/maximize/move events before they reach LCL
   FLCLWndProc := Windows.WNDPROC(SetWindowLongPtr(Self.Handle, GWL_WNDPROC, PtrInt(@TBWindowWndProc)));
@@ -535,7 +533,10 @@ end;
 
 procedure TTrayBrowserWindow.ApplySafeSettings;
 begin
-  // set styling
+  // general
+  Caption := FWindowSettings.Caption;
+
+  // window styling
   if FWindowSettings.AlwaysOnTop then FormStyle := fsSystemStayOnTop else FormStyle := fsNormal;
   if FWindowSettings.Main and (not FWindowSettings.ShowOnTaskBar) then ShowInTaskBar := stNever else ShowInTaskBar := stAlways;
   if FWindowSettings.SnapToWindows then SnapOptions.SnapToForms := True;
@@ -568,8 +569,6 @@ end;
 
 procedure TTrayBrowserWindow.ApplyUnsafeSettings;
 begin
-  Icon.Assign(Application.Icon);
-
   // border styling (take care: BorderStyle cannot be changed at runtime, it causes LCL to crash)
   BorderStyle := bsNone;
   BorderWidth := 0;
@@ -578,6 +577,11 @@ begin
     tbbtBorderless: ; // default borderless mode
     tbbtWindow: if FWindowSettings.Sizeable then BorderStyle := bsSizeable else BorderStyle := bsSingle; // OS window borders
   end;
+
+  // assign icon to the form
+  Icon.Assign(Application.Icon);
+  SendMessage(Handle, WM_SETICON, ICON_SMALL, Icon.Handle);
+  SendMessage(Handle, WM_SETICON, ICON_BIG, Icon.Handle);
 end;
 
 procedure TTrayBrowserWindow.RestartFromSourceWindow;

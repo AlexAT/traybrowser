@@ -28,6 +28,7 @@ begin
   Application.Title := 'TrayBrowser';
   Application.Scaled := True;
   Application.MainFormOnTaskBar := True; // our main application window is root window which is always hidden and has no taskbar entry
+  Application.TaskBarBehavior := tbMultiButton; // make sure each window has its own taskbar tab with its own icon
   RequireDerivedFormResource := True;
 
   TTrayBrowserApplication.Create;

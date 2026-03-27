@@ -7,7 +7,7 @@ object TrayBrowserRootWindow: TTrayBrowserRootWindow
   BorderStyle = bsNone
   DesignTimePPI = 120
   Position = poDefault
-  LCLVersion = '4.4.0.0'
+  LCLVersion = '4.6.0.0'
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy

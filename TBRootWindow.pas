@@ -234,8 +234,11 @@ begin
   Width := 1;
   Height := 1;
 
-  // initialize tray icon
+  // initialize tray and root window icons
   TrayIcon.Icon.Assign(Application.Icon);
+  Icon.Assign(Application.Icon);
+  SendMessage(Handle, WM_SETICON, ICON_SMALL, Icon.Handle);
+  SendMessage(Handle, WM_SETICON, ICON_BIG, Icon.Handle);
 
   // apply settings
   ApplySettings;
