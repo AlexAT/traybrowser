@@ -33,7 +33,6 @@ var __traybrowser;
   __traybrowser.Exit = function () { native function tbExit(); return this.__convertResult(tbExit()); } // v1,v2,v3
   __traybrowser.IsVisible = function () { native function tbIsVisible(); return this.__convertResult(tbIsVisible()); } // v1,v2,v3
   __traybrowser.IsInFocus = function () { native function tbIsInFocus(); return this.__convertResult(tbIsInFocus()); } // v1,v2,v3
-  __traybrowser.WasPositionRestored = function () { native function tbWasPositionRestored(); return this.__convertResult(tbWasPositionRestored()); } // v1,v2,v3
 
   // window sizing and positioning
   __traybrowser.GetBrowserSize = function () { native function tbGetBrowserSize(); return this.__convertResult(tbGetBrowserSize()); } // v3
@@ -48,6 +47,7 @@ var __traybrowser;
   __traybrowser.SetDesktopPosition = function (x, y) { native function tbSetDesktopPosition(x, y); return this.__convertResult(tbSetDesktopPosition(x, y)); } // v3
   __traybrowser.GetSavedPosition = function (id) { native function tbGetSavedPosition(id); return this.__convertResult(tbGetSavedPosition(id)); } // v3
   __traybrowser.SetSavedPosition = function (id, position) { native function tbSetSavedPosition(id, position); return this.__convertResult(tbSetSavedPosition(id, position)); } // v3
+  __traybrowser.WasPositionRestored = function () { native function tbWasPositionRestored(); return this.__convertResult(tbWasPositionRestored()); } // v1,v2,v3
 
   // window and screen information
   __traybrowser.GetMonitorBrowserSize = function () { native function tbGetMonitorBrowserSize(); return this.__convertResult(tbGetMonitorBrowserSize()); } // v3
