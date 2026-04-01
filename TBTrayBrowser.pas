@@ -216,8 +216,9 @@ type
     AllowSystemInfo: Boolean;
     AutoHide: Boolean;
     AutoPrint: Boolean;
-    ClearKVStore: Boolean;
+    ClearCache: Boolean;
     ClearDataDirectory: Boolean;
+    ClearKVStore: Boolean;
     ConserveResources: Boolean;
     ConservativeCache: Boolean;
     Copyright: String;

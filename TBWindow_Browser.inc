@@ -203,6 +203,7 @@ end;
 procedure TTrayBrowserWindow.BrowserCreatedMsg(var Message: TMessage);
 begin
   CEFBrowser.UpdateSize; // this is required for browser to catch up with actual initial component sizing
+  if FWindowSettings.Main and not FIsWindowRestarted and TrayBrowserApplication.Settings.ClearCache then Chromium.ClearHttpCache(False); // reduce application footprint by clearing cache when main window starts for the first time
   Navigate(FWindowSettings.URL); // load default page
 end;
 

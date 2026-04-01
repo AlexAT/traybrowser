@@ -50,6 +50,7 @@ begin
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowExec,                     'AllowExec',               False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowSystemInfo,               'AllowSystemInfo',         True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.AutoHide,                      'AutoHide',                False,                                [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearCache,                    'ClearCache',              True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearDataDirectory,            'ClearDataDirectory',      False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearKVStore,                  'ClearKVStore',            False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.Hint,                          'Hint',                    TB_TITLE_STRING,       250,           [tbsefApplication,tbsefApplicationInit]));

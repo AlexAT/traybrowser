@@ -176,6 +176,7 @@ type
       ////////////////////////////////////////////////////////////
       // internal window state
       FInitialized: Boolean;
+      FIsWindowRestarted: Boolean;
       FIsBrowserRestarting: Boolean;
       FForceWindowState: Boolean;
       FFirstShow: TTBFirstShowState;
@@ -442,6 +443,7 @@ begin
   FWindowID := '';
   Chromium := nil;
   FInitialized := False;
+  FIsWindowRestarted := False;
   FIsBrowserRestarting := False;
   FForceWindowState := False;
   FIsMoving := False;
@@ -527,6 +529,7 @@ begin
   begin
     // we are restarting from another window, this is tricky process that involves copying a bunch of settings and relinking browser and some structures
     RestartFromSourceWindow;
+    FIsWindowRestarted := True;
   end;
   ServiceTimer.Enabled := True;
 end;
@@ -969,7 +972,11 @@ begin
     KillExecProcesses;
     TrayBrowserRootWindow.HideBalloon;
     TrayBrowserRootWindow.ClearUserMenu(FWindowID);
-    if Assigned(Chromium) then Chromium.CloseAllBrowsers;
+    if Assigned(Chromium) then
+    begin
+      if FWindowSettings.Main and TrayBrowserApplication.Settings.ClearCache then Chromium.ClearHttpCache(False); // reduce application footprint by clearing cache when main window closes
+      Chromium.CloseAllBrowsers;
+    end;
     Exit;
   end;
 
