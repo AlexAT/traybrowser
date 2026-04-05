@@ -47,7 +47,7 @@ var __traybrowser;
   __traybrowser.SetDesktopPosition = function (x, y) { native function tbSetDesktopPosition(x, y); return this.__convertResult(tbSetDesktopPosition(x, y)); } // v3
   __traybrowser.GetSavedPosition = function (id) { native function tbGetSavedPosition(id); return this.__convertResult(tbGetSavedPosition(id)); } // v3
   __traybrowser.SetSavedPosition = function (id, position) { native function tbSetSavedPosition(id, position); return this.__convertResult(tbSetSavedPosition(id, position)); } // v3
-  __traybrowser.WasPositionRestored = function () { native function tbWasPositionRestored(); return this.__convertResult(tbWasPositionRestored()); } // v1,v2,v3
+  __traybrowser.WasPositionRestored = function () { native function tbWasPositionRestored(); return this.__convertResult(tbWasPositionRestored()); } // v3
 
   // window and screen information
   __traybrowser.GetMonitorBrowserSize = function () { native function tbGetMonitorBrowserSize(); return this.__convertResult(tbGetMonitorBrowserSize()); } // v3
@@ -160,11 +160,12 @@ var __traybrowser;
   __traybrowser.ExecAsync = function (command, parameters, callback, mode, timeout) { // v3
     native function tbExec(id, command, parameters, mode, timeout);
     var cbid = null;
-    if (((typeof mode) == 'undefined') || (mode === null)) mode = 0; // default to hiddent
+    if (((typeof mode) == 'undefined') || (mode === null)) mode = 0; // default to hidden
     if (((typeof callback) != 'undefined') && (callback !== null))
-      cbid = this.__registerCallback(callback, true); // if we are starting independent process, callback may still be used to know when process has terminated
+      cbid = this.__registerCallback(callback, true); // even if we are starting independent process, callback may still be used to know when process has terminated
     var res = this.__convertResult(tbExec(cbid, command, parameters, mode & this.EXEC_INTERNAL_ASYNC_MASK, timeout)); // take care mode is trimmed from internal flags
     if ((typeof result).toLowerCase() == 'string') return true; // process GUID is converted to true
+    if (cbid !== null) this.__clearCallback(cbid); // on failure, remove registered callback
     return result; // otherwise, undefined or false is returned
   }
 
