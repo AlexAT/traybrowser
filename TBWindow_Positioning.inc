@@ -28,6 +28,8 @@ var
   LTargetBounds: TRect;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // general sizing considerations:
   // browser size (inner) = ScaleFormTo96(window size), so window size = Scale96ToForm(browser size), it is feasible to specify and remember browser sizes, not window sizes
   // of course scaling functions are not used directly but implemented locally because we need to scale to specific monitor and not to what the form is on in multiple places
@@ -43,7 +45,12 @@ begin
   // it is tempting to say the whole TrayBrowser is about this very positioning code as most of the effort really went to making it work as expected under lots of OS-specific conditions and caveats
 
   // prevent reentrancy
-  if FInPositioning then Exit;
+  if FInPositioning then
+  begin
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'reentry', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
   FInPositioning := True;
 
   try
@@ -81,7 +88,7 @@ begin
           else LMonitor := Screen.MonitorFromPoint(Point(Left + (Width div 2) + FMonitorInfo.BorderWidth, Top + ((Height + FMonitorInfo.TitleHeight + FMonitorInfo.BorderWidth) div 2))); // yes, there may be a certain mistake in this heuristics, but it is better then nothing
         if not Assigned(LMonitor) then LMonitor := Monitor; // last resort
       end;
-      if not Assigned(LMonitor) then TrayBrowserApplication.Die('Failed to find monitor to run on'); // whoops, this should never ever happen (means even Monitor is null)
+      if not Assigned(LMonitor) then Die('Failed to find monitor to run on'); // whoops, this should never ever happen (means even Monitor is null)
     end else LMonitor := inForceMonitor; // use forced monitor
     FMonitorInfo.Active := LMonitor.MonitorNum;
 
@@ -439,6 +446,8 @@ begin
   end;
 
   FInPositioning := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -452,6 +461,8 @@ var
   LRect: TRect;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := True; // we need centering after this
   LMonitor := nil;
 
@@ -503,6 +514,7 @@ begin
                 FLastPosition.Window := LRect;
                 FRememberedPosition.Window := LRect;
                 FInManualPositionChange := False;
+                {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'monitor', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
                 Exit; // position recovered, nothing to do anymore
               end else
               begin
@@ -516,6 +528,7 @@ begin
                 FInManualPositionChange := False;
                 FWindowState.PositionRestored := True;
                 Result := False; // full position recovered, centering not required
+                {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'done', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
                 Exit; // position recovered, nothing to do anymore
               end;
             end;
@@ -540,13 +553,15 @@ begin
       if Assigned(LXYMonitor) then LMonitor := LXYMonitor;
     end;
   end;
-  if not Assigned(LMonitor) then TrayBrowserApplication.Die('Failed to find monitor to run on'); // whoops, this should never ever happen
+  if not Assigned(LMonitor) then Die('Failed to find monitor to run on'); // whoops, this should never ever happen
   FInManualPositionChange := True;
   LRect := BoundsRect;
   LRect.Location := LMonitor.WorkareaRect.Location;
   BoundsRect := LRect;
   FLastPosition.Window := LRect;
   FInManualPositionChange := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -554,6 +569,8 @@ end;
 
 function TTrayBrowserWindow.GetWindowMonitor(out outMonitor: TMonitor): Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := 0;
   outMonitor := nil;
   // ClientToScreen is unreliable and maximized windows lie slightly offscreen, thus we have to rely on this heuristics
@@ -567,6 +584,8 @@ begin
     Result := 64;
     outMonitor := Screen.MonitorFromPoint(Point(Left + 64, Top + 64), mdNull);
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -574,12 +593,20 @@ end;
 
 function TTrayBrowserWindow.ScaleToBrowser(const inSize: Integer; const inDPI: Integer): Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if TrayBrowserApplication.Settings.ScalingMode <> tbscNoScale then Result := (inSize * 96) div inDPI else Result := inSize;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.ScaleFromBrowser(const InSize: Integer; const inDPI: Integer): Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if TrayBrowserApplication.Settings.ScalingMode <> tbscNoScale then Result := (inSize * inDPI) div 96 else Result := inSize;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.GetScalingAlignment(const inMonitor: TMonitor): Integer;
@@ -590,10 +617,13 @@ var
   LFindResult: Integer = 0;
   LFindRemainder: Integer = 0;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if TrayBrowserApplication.Settings.ScalingMode = tbscNoScale then
   begin
     // we are told to ignore scaling
     Result := 1;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'ignore', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -605,6 +635,7 @@ begin
     begin
       // no scaling
       Result := 1;
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no scaling', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
       Exit;
     end else if inMonitor.PixelsPerInch > 96 then
     begin
@@ -624,6 +655,7 @@ begin
       // yay, already found our factor
       Result := LDivResult;
       if Result > FWindowSettings.ScaleAlignmentMax then Result := 0; // the factor found is over the limit
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'integer', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
       Exit;
     end else
     begin
@@ -634,6 +666,7 @@ begin
         // seem like to be the case
         Result := (LDivResult * LFindResult) + 1;
         if Result > FWindowSettings.ScaleAlignmentMax then Result := 0; // the factor found is over the limit
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'divisible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
 
@@ -651,10 +684,13 @@ begin
         if LFindRemainder = 0 then begin
           // found closest integer factor value
           Result := LFindResult;
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'found', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           Exit;
         end;
       until (LFindResult > FWindowSettings.ScaleAlignmentMax) or ((LFindResult = FWindowSettings.ScaleAlignmentMax) and (LFindRemainder > 0));
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 

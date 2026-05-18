@@ -18,6 +18,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 procedure TTrayBrowserWindow.ResetCustomDragRegion;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   CustomDragRegion.Visible := False;
   CustomDragRegion.Left := 0;
   CustomDragRegion.Top := 0;
@@ -25,10 +27,14 @@ begin
   CustomDragRegion.Height := 1;
   FCustomDrag.Region := CustomDragRegion.BoundsRect;
   FCustomDrag.Visible := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.CustomDragRegionStartDrag(Sender: TObject; var DragObject: TDragObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FWindowSettings.Movable and CustomDragRegion.Visible then
   begin
     FCustomDrag.WindowPosition := BoundsRect.Location;
@@ -36,10 +42,14 @@ begin
     FCustomDrag.Dragging := True;
     DragTimer.Enabled := True;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.CustomDragRegionEndDrag(Sender, Target: TObject; X, Y: Integer);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FCustomDrag.Dragging and FWindowSettings.Movable then
   begin
     CustomDragDrag;
@@ -47,13 +57,22 @@ begin
     FCustomDrag.Dragging := False;
     PositionOurselves;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.CustomDragDrag;
 var
   LRect: TRect;
 begin
-  if (not FWindowSettings.Movable) or (WindowState <> wsNormal) then Exit; // immovable as Zin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if (not FWindowSettings.Movable) or (WindowState <> wsNormal) then
+  begin
+    // immovable as Zin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'Zin the immovable', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   LRect := BoundsRect;
   LRect.Location := FCustomDrag.WindowPosition + Mouse.CursorPos - FCustomDrag.MousePosition;
@@ -63,47 +82,69 @@ begin
     BoundsRect := LRect;
     FInManualPositionChange := False;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.FormDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FCustomDrag.Dragging and FWindowSettings.Movable then
   begin
     Accept := True;
     CustomDragDrag;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.BrowserPanelDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FCustomDrag.Dragging and FWindowSettings.Movable then
   begin
     Accept := True;
     CustomDragDrag;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.CEFBrowserDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FCustomDrag.Dragging and FWindowSettings.Movable then
   begin
     Accept := True;
     CustomDragDrag;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.CustomDragRegionDragOver(Sender, Source: TObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FCustomDrag.Dragging and FWindowSettings.Movable then
   begin
     Accept := True;
     CustomDragDrag;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.DragTimerTimer(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FCustomDrag.Dragging and FWindowSettings.Movable then CustomDragDrag;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -118,10 +159,13 @@ var
   LMonitor, LTargetMonitor: TMonitor;
   LOffset: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // prevent reentrancy when we are in some manual positioning code (just allow everything to change)
   if FInPositionChanging or FInManualPositionChange or FInPositioning then
   begin
     inherited;
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'reentry', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
 
@@ -134,6 +178,7 @@ begin
       begin
         // do nothing in these weird cases, allow OS to roam freely
         inherited;
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'offscreen', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
         Exit;
       end;
 
@@ -192,6 +237,8 @@ begin
   end;
 
   inherited;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -199,12 +246,18 @@ end;
 
 procedure TTrayBrowserWindow.WMEnterSizeMove;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   FIsMoving := True;
   inherited;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.WMExitSizeMove;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inherited;
 
   // remember position for un-maximizing
@@ -215,11 +268,17 @@ begin
   PositionOurselves(True, False, False, FWindowSettings.Sizeable);
 
   FIsMoving := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.WMMove(var Message: TWMMove);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inherited;
   if Assigned(Chromium) then Chromium.NotifyMoveOrResizeStarted;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 

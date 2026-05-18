@@ -15,21 +15,33 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 function TTrayBrowserRootWindow.CreateBrowserWindow: TForm;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Application.CreateForm(TTrayBrowserWindow, Result);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.GetBrowserWindow(const inWindowID: String): TForm;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := nil;
   if WindowRegistry.ContainsKey(inWindowID) then Result := WindowRegistry[inWindowID];
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.GetBrowserWindowIdList(const inIDList: TStringList);
 var
   LPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inIDList.Clear;
   for LPair in WindowRegistry do inIDList.Add(LPair.Key);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.RegisterBrowserWindow(const inWindow: TForm): String;
@@ -38,15 +50,17 @@ var
   LWindowID: String;
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     repeat
-      if CreateGUID(LGUID) <> 0 then TrayBrowserApplication.Die('Failed to generate browser window GUID');
+      if CreateGUID(LGUID) <> 0 then Die('Failed to generate browser window GUID');
       LWindowID := LGUID.ToString;
     until (not WindowRegistry.ContainsKey(LWindowID));
 
     WindowRegistry.Add(LWindowID, inWindow);
     Result := LWindowID;
-  except TrayBrowserApplication.Die('Failed to register browser window'); end;
+  except Die('Failed to register browser window'); end;
 
   WindowFocusList.Insert(0, LWindowID); // add window to the focus list
   if ExitRequestReceived then TTrayBrowserWindow(inWindow).ExitRequest; // exit handling: send exit request to the window just registered
@@ -57,12 +71,22 @@ begin
     LWindow := TTrayBrowserWindow(GetBrowserWindow(MainWindowID));
     if Assigned(LWindow) then TTrayBrowserWindow(LWindow).PostJSEvent('"onwindowcreated",' + LWindow.QuoteJSString(LWindowID));
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.RelinkBrowserWindow(const inWindowID: String; const inWindow: TForm);
 begin
-  if not WindowRegistry.ContainsKey(inWindowID) then raise Exception.Create('Failed to find window to relink');
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not WindowRegistry.ContainsKey(inWindowID) then
+  begin
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no window', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    raise Exception.Create('Failed to find window to relink');
+  end;
   WindowRegistry[inWindowID] := inWindow;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.UnregisterBrowserWindow(const inWindowID: String): Boolean;
@@ -70,6 +94,8 @@ var
   LWindow: TTrayBrowserWindow;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
 
   // remove window from focus list
@@ -96,5 +122,7 @@ begin
   ClearMenuOrphans; // clear tray menu entries that belong to the closed window (and potentially other uncleared elements)
   if (not ExitRequestReceived) and (inWindowID = MainWindowID) then TerminateTrayBrowser; // exit handling: main window exited, terminate the rest
   if ExitRequestReceived then TerminateTrayBrowser; // process exit request further on window termination
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 

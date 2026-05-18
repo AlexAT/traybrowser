@@ -1,6 +1,6 @@
 unit TBRootWindow;
 
-{$mode ObjFPC}{$modeswitch AdvancedRecords}{$H+}{$codepage utf8}
+{$INCLUDE TBTrayBrowser_Defines.inc}
 
 (*
 Licensed under BSD 3-clause license
@@ -221,6 +221,8 @@ procedure TTrayBrowserRootWindow.FormCreate(Sender: TObject);
 var
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   ApplicationInFocus := False;
   ApplicationChangingVisibility := False;
   BalloonShowing := False;
@@ -264,26 +266,36 @@ begin
   // create main browser window
   TrayBrowserApplication.TempWindowSettings := TrayBrowserApplication.MainWindowSettings;
   LWindow := TTrayBrowserWindow(CreateBrowserWindow);
-  if not Assigned(LWindow) then TrayBrowserApplication.Die('Failed to create main browser window');
+  if not Assigned(LWindow) then Die('Failed to create main browser window');
   MainWindowID := LWindow.FWindowID;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.ApplySettings;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   TrayIcon.Hint := TrayBrowserApplication.Settings.Hint;
   if TrayBrowserApplication.Settings.MenuDisable then TrayIcon.PopUpMenu := nil else TrayIcon.PopUpMenu := TrayMenu;
   TrayMenuExit.Caption := TrayBrowserApplication.Settings.MenuExitCaption;
   TrayMenuRetry.Caption := TrayBrowserApplication.Settings.MenuRetryCaption;
   TrayMenuExit.Visible := not TrayBrowserApplication.Settings.MenuHideExit;
   if TrayBrowserApplication.Settings.ShowTrayIcon then TrayIcon.Show else TrayIcon.Hide;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.FormDestroy(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   StopZMQPollerThread; // normally in onClose, but better safe than sorry
   FreeAndNil(WindowFocusList);
   FreeAndNil(MemoryKVStore);
   FreeAndNil(WindowRegistry);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -291,13 +303,21 @@ end;
 
 procedure TTrayBrowserRootWindow.FormShow(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Hide; // keep us hidden
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.FormWindowStateChange(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // prevent any window state changes
   WindowState := wsNormal;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -308,6 +328,8 @@ procedure TTrayBrowserRootWindow.TerminateTrayBrowser;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if ExitRequestReceived then
   begin
     // exit request already received
@@ -315,6 +337,7 @@ begin
       else if (WindowRegistry.Count = 1) and WindowRegistry.ContainsKey(MainWindowID) then
         TTrayBrowserWindow(WindowRegistry[MainWindowID]).ExitRequest; // only main window remains, send termination request to the main window
     TrayBrowserSynchronizeWidgetSet; // allow window to catch request
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit request received', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
 
@@ -343,22 +366,34 @@ begin
 
   TrayBrowserSynchronizeWidgetSet; // allow windows to catch requests
   if WindowRegistry.Count = 0 then Close; // well, this should not happen here, but if we already have no windows, we can terminate immediately
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.AppPropsQueryEndSession(var Cancel: Boolean);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Cancel := False;
   TerminateTrayBrowser;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   StopZMQPollerThread;
   Application.Terminate;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.StopZMQPollerThread;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if Assigned(ZMQPollerThread) then
   begin
     try
@@ -367,6 +402,8 @@ begin
     except end;
     FreeAndNil(ZMQPollerThread);
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 end.

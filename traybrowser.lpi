@@ -78,7 +78,11 @@
             </CompilerMessages>
             <CustomOptions Value="-dTB_DEBUG_ZMQ
 -dTB_DEBUG_JS_CALL
--dTB_DEBUG"/>
+-dTB_DEBUG
+-dTB_INIT_DEBUG
+-dTB_TRACE_FEE
+-dTB_TRACE_FEE_ZMQMSG
+-dTB_TRACE_FEE_INSANE"/>
             <OtherDefines Count="3">
               <Define0 Value="TB_DEBUG_ZMQ"/>
               <Define1 Value="TB_DEBUG_JS_CALL"/>
@@ -211,6 +215,14 @@
       </Unit>
       <Unit>
         <Filename Value="TBWindow_Exec.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="TBTrayBrowser_Defines.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="TBTrayBrowser_Debug.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
