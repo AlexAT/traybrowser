@@ -1,6 +1,6 @@
 unit TBZMQ;
 
-{$mode ObjFPC}{$modeswitch AdvancedRecords}{$H+}{$codepage utf8}
+{$INCLUDE TBTrayBrowser_Defines.inc}
 
 (*
 Licensed under BSD 3-clause license
@@ -87,25 +87,31 @@ uses
 
 constructor TTrayBrowserZMQ.Create;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inherited;
 
-  if not Assigned(TrayBrowserApplication) then TrayBrowserApplication.Die('TrayBrowserZMQ class cannot be created before TrayBrowserApplication class');
-  if Assigned(TrayBrowserZMQ) then TrayBrowserApplication.Die('TrayBrowserZMQ class cannot be created more than once');
+  if not Assigned(TrayBrowserApplication) then Die('TrayBrowserZMQ class cannot be created before TrayBrowserApplication class');
+  if Assigned(TrayBrowserZMQ) then Die('TrayBrowserZMQ class cannot be created more than once');
   TrayBrowserZMQ := Self;
 
   TBMessageId := Random($3FFFFFFF);
   ZMQCommandCS := TCriticalSection.Create;
 
   ZMQContext := zmq_ctx_new();
-  if not Assigned(ZMQContext) then TrayBrowserApplication.Die('Failed to initialize ZeroMQ context (' + IntToStr(zmq_errno()) + ')');
+  if not Assigned(ZMQContext) then Die('Failed to initialize ZeroMQ context (' + IntToStr(zmq_errno()) + ')');
 
   ZMQRouterSocket := nil;
   ZMQDealerSocket := nil;
   ZMQPollTimeout := TB_ZMQ_POLL_TIMEOUT;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 destructor TTrayBrowserZMQ.Destroy;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if Assigned(ZMQDealerSocket) then
   begin
     zmq_close(ZMQDealerSocket);
@@ -122,6 +128,8 @@ begin
   ZMQContext := nil;
 
   FreeAndNil(ZMQCommandCS);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
   inherited;
 end;
 
@@ -129,21 +137,29 @@ procedure TTrayBrowserZMQ.CreateRouterSocket;
 var
   rc: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   ZMQRouterSocket := zmq_socket(ZMQContext, ZMQ_ROUTER);
-  if not Assigned(ZMQRouterSocket) then TrayBrowserApplication.Die('Failed to create ZeroMQ ROUTER socket (' + IntToStr(zmq_errno()) + ')');
+  if not Assigned(ZMQRouterSocket) then Die('Failed to create ZeroMQ ROUTER socket (' + IntToStr(zmq_errno()) + ')');
   rc := zmq_bind(ZMQRouterSocket, PChar('ipc://' + TrayBrowserApplication.IPCPath));
-  if rc <> 0 then TrayBrowserApplication.Die('Failed to initialize ZeroMQ ROUTER socket (' + IntToStr(zmq_errno()) + ')');
+  if rc <> 0 then Die('Failed to initialize ZeroMQ ROUTER socket (' + IntToStr(zmq_errno()) + ')');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserZMQ.CreateDealerSocket;
 var
   rc: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   ZMQDealerSocket := zmq_socket(ZMQContext, ZMQ_DEALER);
-  if not Assigned(ZMQDealerSocket) then TrayBrowserApplication.Die('Failed to create ZeroMQ DEALER socket (' + IntToStr(zmq_errno()) + ')');
+  if not Assigned(ZMQDealerSocket) then Die('Failed to create ZeroMQ DEALER socket (' + IntToStr(zmq_errno()) + ')');
   rc := zmq_connect(ZMQDealerSocket, PChar('ipc://' + TrayBrowserApplication.IPCPath));
-  if rc <> 0 then TrayBrowserApplication.Die('Failed to initialize ZeroMQ DEALER socket (' + IntToStr(zmq_errno()) + ')');
+  if rc <> 0 then Die('Failed to initialize ZeroMQ DEALER socket (' + IntToStr(zmq_errno()) + ')');
   GenerateMessageId; // generate initial ZMQ message ID on startup
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // low level ZMQ message communication
@@ -152,12 +168,16 @@ function TTrayBrowserZMQ.Poll(const inSocket: Pointer; const inMode: cshort): Bo
 var
   LPollItems: array of zmq_pollitem_t = ();
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   SetLength(LPollItems, 1);
   LPollItems[0].socket := inSocket;
   LPollItems[0].events := inMode;
   zmq_poll(@LPollItems[0], 1, 100);
   if (LPollItems[0].revents and inMode) = inMode then Result := True;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserZMQ.SendMessage(const inSocket: Pointer; const inMessage: String; const inIsLast: Boolean): Integer;
@@ -165,6 +185,8 @@ var
   LRetry: Boolean;
   msg_zmq: zmq_msg_t;
 begin
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := 0;
 
   zmq_msg_init_size(@msg_zmq, Length(inMessage));
@@ -181,7 +203,7 @@ begin
       if (Result <> TB_ZMQ_ERR_EAGAIN) then
       begin
         // some weird shit happens with EAGAIN, it is just equivalent to no error on blocking sockets under Windows
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ send error: ' + IntToStr(Result) + ' ' + zmq_strerror(Result), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ send error: ' + IntToStr(Result) + ' ' + zmq_strerror(Result), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
       end;
       if Result = TB_ZMQ_ERR_EINTR then
       begin
@@ -193,6 +215,8 @@ begin
   zmq_msg_close(@msg_zmq);
 
   if Result = TB_ZMQ_ERR_EAGAIN then Result := 0; // some weird shit happens with EAGAIN, it is just equivalent to no error on blocking sockets under Windows
+
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserZMQ.ReceiveMessage(const inSocket: Pointer; out outMessage: String; out outIsLast: Boolean): Integer;
@@ -201,6 +225,8 @@ var
   LRetry: Boolean;
   msg_zmq: zmq_msg_t;
 begin
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   outMessage := '';
   zmq_msg_init(@msg_zmq);
   repeat
@@ -218,7 +244,7 @@ begin
     end else
     begin
       Result := zmq_errno();
-      {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error: ' + IntToStr(Result) + ' ' + zmq_strerror(Result), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+      {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error: ' + IntToStr(Result) + ' ' + zmq_strerror(Result), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
       if Result = TB_ZMQ_ERR_EINTR then
       begin
         LRetry := True;
@@ -227,12 +253,16 @@ begin
     end;
   until not LRetry;
   zmq_msg_close(@msg_zmq);
+
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserZMQ.SendMultipart(const inSocket: Pointer; const inParts: TStringList): Boolean;
 var
   i, l, rc: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := True;
 
   // try sending request as multipart ZMQ message until we can, honoring EINTR
@@ -245,12 +275,14 @@ begin
       if i = l then
       begin
         // we somehow failed to send final part of ZMQ message, this is no error protocol wise
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ send error (data): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ send error (data): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
         Result := False;
       end else
-        TrayBrowserApplication.Die('ZMQ fatal send error (part ' + IntToStr(i) + '): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), TB_HALT_ZMQ_PROTOCOL_ERROR); // we somehow failed to send part of ZMQ message, here it should not happen at all and will break protocol so we assert if we do
+        Die('ZMQ fatal send error (part ' + IntToStr(i) + '): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), TB_HALT_ZMQ_PROTOCOL_ERROR); // we somehow failed to send part of ZMQ message, here it should not happen at all and will break protocol so we assert if we do
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserZMQ.ReceiveMultipart(const inSocket: Pointer): TStringList;
@@ -259,6 +291,8 @@ var
   s: String = '';
   rc: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := TStringList.Create;
 
   // try receiving request as multipart ZMQ message if we can, honoring EINTR
@@ -269,23 +303,31 @@ begin
       if Result.Count = 0 then
       begin
         // we somehow failed to receive first part of ZMQ message, this is no error protocol wise
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error (first part):' + IntToStr(rc) + zmq_strerror(rc), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error (first part):' + IntToStr(rc) + zmq_strerror(rc), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
         FreeAndNil(Result);
+        {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'receive error (first part)', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end else
-        TrayBrowserApplication.Die('ZMQ fatal receive error (part ' + IntToStr(Result.Count + 1) + '): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), TB_HALT_ZMQ_PROTOCOL_ERROR); // we somehow failed to receive next part of ZMQ message, here it should not happen at all and will break protocol so we assert if we do
+        Die('ZMQ fatal receive error (part ' + IntToStr(Result.Count + 1) + '): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), TB_HALT_ZMQ_PROTOCOL_ERROR); // we somehow failed to receive next part of ZMQ message, here it should not happen at all and will break protocol so we assert if we do
     end;
     Result.Add(s);
   until LIsLast or (Result.Count >= TB_ZMQ_MAX_PARTS);
-  if LIsLast then Exit; // all green
+  if LIsLast then
+  begin
+    // all green
+    {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'received', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   // sometimes shit happens and we may have received message too long, continue receiving unless we get last part of it and return error
-  {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error: giant message encountered', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+  {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error: giant message encountered', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
   FreeAndNil(Result);
   repeat
     rc := ReceiveMessage(inSocket, s, LIsLast);
-    if rc <> 0 then TrayBrowserApplication.Die('ZMQ fatal receive error (giant): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), TB_HALT_ZMQ_PROTOCOL_ERROR); // we somehow failed to receive next part of ZMQ message, here it should not happen at all and will break protocol so we assert if we do
+    if rc <> 0 then Die('ZMQ fatal receive error (giant): ' + IntToStr(rc) + ' ' + zmq_strerror(rc), TB_HALT_ZMQ_PROTOCOL_ERROR); // we somehow failed to receive next part of ZMQ message, here it should not happen at all and will break protocol so we assert if we do
   until LIsLast;
+
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result here
 end;
 
 // high level ZMQ command exchange towards the main process
@@ -294,10 +336,14 @@ procedure TTrayBrowserZMQ.GenerateMessageId;
 var
   r: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   repeat
     r := Random($3FFFFFFF);
   until Abs(TBMessageId - r) < $100000; // ensure a little offset between consecutive generations
   TBMessageId := r;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserZMQ.Command(const inSocket: Pointer; const inPIDText: String; const inCommand: String; const inMessage: TTBKVMessage): TTBKVMessage;
@@ -309,6 +355,8 @@ var
   i: Integer;
   t, tt: QWord;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // lock us just in case multiple threads try to do this simultaneously, ZMQ socket cannot be shared
   ZMQCommandCS.Enter;
 
@@ -318,10 +366,10 @@ begin
     LMessageID := inPIDText + ':' + IntToStr(TBMessageId);
     TBMessageId := TBMessageId + 1;
 
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request: [' + LMessageID + '] [' + inCommand + '] ' + TrayBrowserApplication.LogKVMessage(inMessage));{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request: [' + LMessageID + '] [' + inCommand + '] ' + TrayBrowserApplication.LogKVMessage(inMessage));{$ENDIF}
 
     // poll until ZMQ socket allows to send something
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ w/poll start');{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ w/poll start');{$ENDIF}
     t := GetTickCount64;
     while True do
     begin
@@ -332,11 +380,12 @@ begin
       if (tt - t) > ZMQPollTimeout then
       begin
         // timed out
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ w/poll timeout', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ w/poll timeout', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'write poll timeout', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
     end;
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ w/poll done');{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ w/poll done');{$ENDIF}
 
     // send message (msgid, IPC key, cmd, data)
     LMessage := TStringList.Create;
@@ -357,14 +406,15 @@ begin
       if not SendMultipart(inSocket, LMessage) then
       begin
         FreeAndNil(LMessage);
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'send failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
-      {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ sent: [' + LMessageID + '] [' + inCommand + '] ' + TrayBrowserApplication.LogKVMessage(inMessage));{$ENDIF}
+      {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ sent: [' + LMessageID + '] [' + inCommand + '] ' + TrayBrowserApplication.LogKVMessage(inMessage));{$ENDIF}
     except end;
     FreeAndNil(LMessage);
 
     // poll until ZMQ socket has something back for us
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ r/poll start');{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ r/poll start');{$ENDIF}
     t := GetTickCount64;
     while True do
     begin
@@ -375,11 +425,12 @@ begin
       if (tt - t) > ZMQPollTimeout then
       begin
         // timed out
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ r/poll timeout', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ r/poll timeout', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'read poll timeout', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
     end;
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ r/poll done');{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ r/poll done');{$ENDIF}
 
     // now going to receive the response
     repeat
@@ -390,7 +441,8 @@ begin
       if not Assigned(LMessage) then
       begin
         // failed to receive message
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error (no message)', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error (no message)', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'receive failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         raise Exception.Create('Failed to receive ZMQ message'); // attempt to resynchronize
       end;
 
@@ -398,37 +450,42 @@ begin
         if LMessage.Count < 4 then
         begin
           // runt message
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error (runt message)', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error (runt message)', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
           FreeAndNil(LMessage);
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'desynchronized (count)', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           raise Exception.Create('ZMQ protocol desynchronized'); // attempt to resynchronize
         end;
 
         if LMessage[0] <> LMessageID then
         begin
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error (wrong message id): expected ' + LMessageID + ' got ' + LMessage[0], CEF_LOG_SEVERITY_ERROR);{$ENDIF} // getting wrong message ID means protocol desynchronized
+          {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error (wrong message id): expected ' + LMessageID + ' got ' + LMessage[0], CEF_LOG_SEVERITY_ERROR);{$ENDIF} // getting wrong message ID means protocol desynchronized
           FreeAndNil(LMessage);
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'desynchronized (id)', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           raise Exception.Create('ZMQ protocol desynchronized'); // attempt to resynchronize
         end;
 
         if LMessage[1] <> TrayBrowserApplication.IPCKey then
-          TrayBrowserApplication.Die('ZMQ fatal receive error (wrong IPC key)', TB_HALT_ZMQ_PROTOCOL_ERROR); // wrong IPC key means we are knocking to some wrong door, thus we die
+          Die('ZMQ fatal receive error (wrong IPC key)', TB_HALT_ZMQ_PROTOCOL_ERROR); // wrong IPC key means we are knocking to some wrong door, thus we die
 
         if LMessage[2] <> inCommand then
         begin
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.Die('ZMQ receive error (wrong command): expected ' + inCommand + ' got ' + LMessage[2], CEF_LOG_SEVERITY_ERROR);{$ENDIF} // wrong command means protocol desynchronized
+          {$IFDEF TB_DEBUG_ZMQ}Die('ZMQ receive error (wrong command): expected ' + inCommand + ' got ' + LMessage[2], CEF_LOG_SEVERITY_ERROR);{$ENDIF} // wrong command means protocol desynchronized
           FreeAndNil(LMessage);
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'desynchronized (cmd)', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           raise Exception.Create('ZMQ protocol desynchronized'); // attempt to resynchronize
         end;
 
         try
           i := StrToInt(LMessage[3]);
         except
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error (unparseable arguments count): ' + LMessage[3], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error (unparseable arguments count): ' + LMessage[3], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'wrong count', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           raise Exception.Create('Wrong ZMQ message arguments count');
         end;
         if LMessage.Count <> ((i * 2) + 4) then
         begin
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ receive error (wrong message length): expected ' + IntToStr((i * 2) + 4) + ' got ' + LMessage[3], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ receive error (wrong message length): expected ' + IntToStr((i * 2) + 4) + ' got ' + LMessage[3], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'wrong length', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           raise Exception.Create('Wrong ZMQ message length');
         end;
 
@@ -442,10 +499,11 @@ begin
           end;
         except
           FreeAndNil(Result);
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'parse failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           raise Exception.Create('Failed to read ZMQ message elements');
         end;
 
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request result: ' + TrayBrowserApplication.LogKVMessage(Result));{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request result: ' + TrayBrowserApplication.LogKVMessage(Result));{$ENDIF}
       except
         on e: Exception do
         begin
@@ -454,9 +512,9 @@ begin
             begin
               // on protocol desynchronization, we try to read next messages until we hit our desired message
               // if we cannot find our desired message, we read everything and abort reading, because next one should be in sync
-              TrayBrowserApplication.DebugLog('Browser communication protocol desynchronized, attempting to resynchronize', CEF_LOG_SEVERITY_ERROR);
+              DebugLog('Browser communication protocol desynchronized, attempting to resynchronize', CEF_LOG_SEVERITY_ERROR);
               if Poll(inSocket, ZMQ_POLLIN) then LRetry := True // read next message that is waiting for us
-                else TrayBrowserApplication.DebugLog('Emergency browser communication protocol resynchronization complete, but the message is lost', CEF_LOG_SEVERITY_FATAL);
+                else DebugLog('Emergency browser communication protocol resynchronization complete, but the message is lost', CEF_LOG_SEVERITY_FATAL);
             end;
           end;
         end;
@@ -467,6 +525,8 @@ begin
   except end;
 
   ZMQCommandCS.Leave;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result here
 end;
 
 end.

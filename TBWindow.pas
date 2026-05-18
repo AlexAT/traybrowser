@@ -1,6 +1,6 @@
 unit TBWindow;
 
-{$mode ObjFPC}{$modeswitch AdvancedRecords}{$H+}{$codepage utf8}
+{$INCLUDE TBTrayBrowser_Defines.inc}
 
 (*
 Licensed under BSD 3-clause license
@@ -440,6 +440,8 @@ uses
 
 procedure TTrayBrowserWindow.FormCreate(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   FWindowID := '';
   Chromium := nil;
   FInitialized := False;
@@ -532,10 +534,14 @@ begin
     FIsWindowRestarted := True;
   end;
   ServiceTimer.Enabled := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.ApplySafeSettings;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // general
   Caption := FWindowSettings.Caption;
 
@@ -568,10 +574,14 @@ begin
       BorderIcons := [biMinimize]; // this effectively disables any buttons on Windows, it is not enough to set it empty
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.ApplyUnsafeSettings;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // border styling (take care: BorderStyle cannot be changed at runtime, it causes LCL to crash)
   BorderStyle := bsNone;
   BorderWidth := 0;
@@ -585,10 +595,14 @@ begin
   Icon.Assign(Application.Icon);
   SendMessage(Handle, WM_SETICON, ICON_SMALL, Icon.Handle);
   SendMessage(Handle, WM_SETICON, ICON_BIG, Icon.Handle);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.RestartFromSourceWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // stop all source window timers
   TTrayBrowserWindow(FWindowSettings.RestartSource).DragTimer.Enabled := False;
   TTrayBrowserWindow(FWindowSettings.RestartSource).ServiceTimer.Enabled := False;
@@ -672,10 +686,14 @@ begin
 
   // and we are done, remove restart source reference
   FWindowSettings.RestartSource := nil;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.FormDestroy(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // stop timers
   ServiceTimer.Enabled := False;
   DragTimer.Enabled := False;
@@ -697,6 +715,8 @@ begin
   FreeAndNil(FCEFBrowserOpLock);
 
   FCEFBrowserParams := nil; // prevent us from destroying this one, as CEF destroys it by itself
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////
@@ -706,10 +726,13 @@ procedure TTrayBrowserWindow.FormShow(Sender: TObject);
 var
   LRect: TRect;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FExit.Requested or TrayBrowserRootWindow.ExitRequestReceived then
   begin
     // we do not allow us to be shown when exit is requested
     Hide;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
 
@@ -749,6 +772,7 @@ begin
     if FWindowSettings.KeepHidden then
     begin
       Hide;
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'keep hidden', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
       Exit;
     end;
   end;
@@ -766,10 +790,14 @@ begin
       FormWindowStateChange(Self); // yes, this is necessary, programmatic changes do not fire the event
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.FormHide(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if not (FExit.Requested or TrayBrowserRootWindow.ExitRequestReceived) then PostJSEvent('"onhide"'); // onhide events are not posted when exit is requested
 
   // if application is in focus, focus to next eligible window in reverse order
@@ -778,6 +806,8 @@ begin
     FWindowState.WasVisible := False; // make sure we are not in application visibility pool anymore
     TrayBrowserRootWindow.FocusEligibleWindow;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -785,8 +815,12 @@ end;
 
 procedure TTrayBrowserWindow.FormActivate(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   ActiveControl := CEFBrowser;
   TrayBrowserRootWindow.WindowGotFocus(FWindowID);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -796,6 +830,8 @@ procedure TTrayBrowserWindow.FormWindowStateChange(Sender: TObject);
 var
   LNewRect: TRect;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if WindowState = wsNormal then
   begin
     // returning to normal window state, restore internally remembered position if any
@@ -878,6 +914,8 @@ begin
     if Assigned(Chromium) then Chromium.NotifyMoveOrResizeStarted; // notify browser when we go maximizing or widget-based fullscreen
   end;
   PositionOurselves;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -885,24 +923,35 @@ end;
 
 procedure TTrayBrowserWindow.ExitRequest;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this one may safely be called multiple times, it just re-requests window close each time it is called
   FExit.Requested := True;
   PostMessage(Handle, WM_CLOSE, 0, 0);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   CloseAction := caFree;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   CanClose := False;
 
   if not Assigned(Chromium) then
   begin
     // no browser (yet or in the restart process), so safe to exit
     CanClose := True;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no browser', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
 
@@ -936,6 +985,7 @@ begin
             end;
           end;
         end;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'minimize', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
         Exit;
       end;
 
@@ -943,23 +993,35 @@ begin
       begin
         // just a JavaScript event
         PostJSEvent('"onclosebutton"');
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'event', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
         Exit;
       end;
     end;
 
     // if exit is not needed, exit :D
-    if not FExit.Requested then Exit;
+    if not FExit.Requested then
+    begin
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+      Exit;
+    end;
   end;
 
   // step 2: exit is now requested, check if need to do graceful exit (if JS API registered onexit event), if yes, then start graceful exit timer and wait for its completion, not giving any damn about any exit requests
   if FWindowState.ExitEventNeeded and (not FExit.EventComplete) and (FWindowSettings.GracefulExitTime > 0)then
   begin
     // graceful exit event handling is necessary
-    if FExit.Timer >= 0 then Exit; // waiting for graceful exit event to be complete
+    if FExit.Timer >= 0 then
+    begin
+      // waiting for graceful exit event to be complete
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'waiting', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+      Exit;
+    end;
     FExit.Timer := FWindowSettings.GracefulExitTime * 1000;
+    ServiceTimer.Enabled := True; // enable service timer that handles timeout
     TrayBrowserRootWindow.HideBalloon;
     TrayBrowserRootWindow.ClearUserMenu(FWindowID);
     PostJSEvent('"onexit"');
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'graceful', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
 
@@ -972,11 +1034,9 @@ begin
     KillExecProcesses;
     TrayBrowserRootWindow.HideBalloon;
     TrayBrowserRootWindow.ClearUserMenu(FWindowID);
-    if Assigned(Chromium) then
-    begin
-      if FWindowSettings.Main and TrayBrowserApplication.Settings.ClearCache then Chromium.ClearHttpCache(False); // reduce application footprint by clearing cache when main window closes
-      Chromium.CloseAllBrowsers;
-    end;
+    if FWindowSettings.Main and TrayBrowserApplication.Settings.ClearCache then Chromium.ClearHttpCache(False); // reduce application footprint by clearing cache when main window closes
+    if Assigned(Chromium) then Chromium.CloseAllBrowsers;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'confirmed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
 
@@ -988,18 +1048,27 @@ begin
     FreeAndNil(Chromium);
     FreeAndNil(CEFBrowser);
     CanClose := True;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'done', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
     Exit;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.WMQueryEndSession(var Message: TWMQueryEndSession);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Message.Result := 0;
   ExitRequest;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserWindow.ServiceCheckTerminationTimeout: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   FExit.Timer := FExit.Timer - ServiceTimer.Interval;
   if FExit.Timer <= 0 then
@@ -1008,6 +1077,8 @@ begin
     FExit.EventComplete := True;
     ExitRequest;
   end else Result := True; // do not disable service timer if we are still waiting
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1021,6 +1092,8 @@ var
   s, s2: String;
   b: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case inCommand of
     // window commands
     'GOT_BROWSER':
@@ -1083,6 +1156,7 @@ begin
           on e: Exception do
           begin
             inReply.Add('ERROR', 'JS_CALL_REQUEST_FAILED:' + e.Message);
+            {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'JS call failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
             Exit;
           end;
         end;
@@ -1104,6 +1178,8 @@ begin
       inReply.Add('ERROR', 'INVALID_WINDOW_COMMAND');
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1112,6 +1188,8 @@ end;
 // on windows, we need to intercept WndProc to disable minimize/maximize messages when necessary, detect end of movement and monitor changes, these messages are not passed by LCL
 function TTrayBrowserWindow.WMWndProc(const inHWND: HWND; const inUMSG: UINT; const inWPARAM: WParam; const inLPARAM: LParam; out outPrevProc: Windows.WNDPROC): LRESULT;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := 0;
   outPrevProc := FLCLWndProc; // we return prevProc = nil to say the message is handled
 
@@ -1189,6 +1267,8 @@ begin
       end;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TBWindowWndProc(hwnd: HWND; uMsg: UINT; wParam: WParam; lParam: LParam): LRESULT; stdcall;
@@ -1196,6 +1276,8 @@ var
   LControl: TWinControl;
   LPrevProc: WNDPROC;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := 0; // silence messages if there is no window control
   LControl := Controls.FindControl(hwnd);
   if Assigned(LControl) and (LControl is TTrayBrowserWindow) then
@@ -1203,6 +1285,8 @@ begin
     Result := TTrayBrowserWindow(LControl).WMWndProc(hwnd, uMsg, wParam, lParam, LPrevProc);
     if Assigned(LPrevProc) then Result := LPrevProc(hwnd, uMsg, wParam, lParam);
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1212,12 +1296,16 @@ procedure TTrayBrowserWindow.ServiceTimerTimer(Sender: TObject);
 var
   LHasJobs: Boolean = False;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this ticks each 100 ms
   try if FExit.Timer >= 0 then LHasJobs := LHasJobs or ServiceCheckTerminationTimeout; except LHasJobs := True; end; // graceful termination timeout
   try if FWindowState.InLoadError then LHasJobs := LHasJobs or ServiceCheckLoadErrorState; except LHasJobs := True; end; // browser load error handling
   try if FWindowState.ExecProcesses.Count > 0 then LHasJobs := LHasJobs or ServiceReapExecProcesses; except LHasJobs := True; end; // reap running external processes
 
   if not LHasJobs then ServiceTimer.Enabled := False; // disable ourselves until we get some next job to do
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 end.

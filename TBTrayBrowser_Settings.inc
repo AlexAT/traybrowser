@@ -15,6 +15,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 procedure TTrayBrowserApplication.InitializeSettingsList;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // early initialization
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.ApplicationID,                 'ApplicationID',           TB_ID_STRING,          64,            [tbsefApplication,tbsefInit,tbsefNoEmpty,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.UseNativeDataDirectory,        'UseNativeDataDirectory',  False,                                [tbsefApplication,tbsefInit,tbsefProtected,tbsefInvisible]));
@@ -265,21 +267,29 @@ begin
       SettingChoiceDef(Integer(tbstBottomRight), 'bottomright'), SettingChoiceDef(Integer(tbstBottomRight), 'rightbottom'), SettingChoiceDef(Integer(tbstBottomRight), 'br'), SettingChoiceDef(Integer(tbstBottomRight), 'rb')
     ]
   ));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.SetDefaults;
 var
   LElement: TTBSettingElement;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // apply all the application level defaults
   for LElement in SettingsList do
     if tbsefApplication in LElement.Flags then LElement.ApplyDefault;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.SetWindowDefaults;
 var
   LElement: TTBSettingElement;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // apply all window level defaults
   for LElement in SettingsList do
     if tbsefWindow in LElement.Flags then LElement.ApplyDefault;
@@ -293,10 +303,14 @@ begin
   TempWindowSettings.ScaleAlignmentMax := Settings.ScaleAlignmentMax;
   TempWindowSettings.StartMonitorID := 0;
   TempWindowSettings.StartMonitorPosition := Point(0,0);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.ApplyMainWindowDefaults(const inConfig: TTBStringDict; const inUser: Boolean = False);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // apply main window specific defaults
   TempWindowSettings.Main := True;
   TempWindowSettings.Caption := Settings.Title;
@@ -319,27 +333,37 @@ begin
     TempWindowSettings.BorderMargin := 1;
     TempWindowSettings.SnapTo := tbstTray;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.ApplySettings(const inConfig: TTBStringDict; const inFlags: TTBSettingFlagsSet; const inUser: Boolean = False);
 var
   LElement: TTBSettingElement;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   for LElement in SettingsList do
     if LElement.Flags >= inFlags then
       if (not inUser) or (not (tbsefProtected in LElement.Flags)) then
         if not LElement.ApplyConfig(inConfig) then
           if inConfig.ContainsKey(LElement.NameLC) then
             inConfig.Remove(LElement.NameLC);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.FixupSettings(const inConfig: TTBStringDict);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // user-agent has few choice variants
   case TempSettings.UserAgent of
    '', 'default': TempSettings.UserAgent := '%DEFAULT%'; // empty user agent also means we use default
    'browser': TempSettings.UserAgent := '%BROWSER%';
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.FixupWindowSettings(const inConfig: TTBStringDict);
@@ -347,6 +371,8 @@ var
   LRegexp: TRegExpr;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // main window always has empty position ID
   if TempWindowSettings.Main then TempWindowSettings.PositionID := '';
 
@@ -439,6 +465,8 @@ begin
   if TempWindowSettings.SnapTo <> tbstNone then TempWindowSettings.Movable := False; // SnapTo inhibits final Movable value
   if (not TempWindowSettings.Movable) or (TempWindowSettings.Border <> tbbtWindow) then TempWindowSettings.Sizeable := False; // Sizeable cannot be enabled without Movable and BorderType=window
   if (TempWindowSettings.MinimizeMode = tbmiTaskbar) and (not TempWindowSettings.ShowOnTaskBar) then TempWindowSettings.MinimizeMode := tbmiEvent; // MinimizeMode of 'taskbar' does not work without ShowTaskbar=true
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.ReadSettings;
@@ -449,6 +477,8 @@ var
   s: String = '';
   b: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LConfig := TTBStringDict.Create();
   try
     // read internally embedded settings
@@ -511,6 +541,7 @@ begin
     if IsSubprocess and (not Settings.SingleProcess) then
     begin
       FreeAndNil(LConfig);
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'subprocess', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
       Exit;
     end;
   except Die('Failed to read configuration files'); end;
@@ -564,10 +595,14 @@ begin
   Application.Hint := Settings.Hint;
 
   FreeAndNil(LConfig);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.BuildDataPath;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   {$IFDEF WINDOWS}
   // on Windows, we have both local and roaming profile paths, while on Unix we do not
   ProfilePath := IncludeTrailingPathDelimiter(CleanAndExpandDirectory(IncludeTrailingPathDelimiter(GetWindowsSpecialDir(CSIDL_LOCAL_APPDATA)) + IfThen(Settings.UseNativeDataDirectory, '', IncludeTrailingPathDelimiter('TrayBrowser'))));
@@ -581,6 +616,8 @@ begin
   // set data path and volatile data path according to local profile path
   DataPath := IncludeTrailingPathDelimiter(ProfilePath + ApplicationID);
   VolatilePath := IncludeTrailingPathDelimiter(DataPath + 'volatile');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // listing settings back
@@ -590,6 +627,8 @@ var
   LElement: TTBSettingElement;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   for LElement in SettingsList do
   begin
     if LElement.Flags >= inFlags then
@@ -627,29 +666,59 @@ begin
       end;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // argument read helpers
 
 function TTrayBrowserApplication.StrArgToBool(const inStr: String; const inUseLiterals: Boolean = False; const inLiteralsOnly: Boolean = False): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   if inUseLiterals then
   begin
     case LowerCase(inStr) of
-      '', '-', 'no',  'none', 'off',  'false',  'disable', 'disabled', 'inactive', 'passive', '0': Exit;
+      '', '-', 'no',  'none', 'off',  'false',  'disable', 'disabled', 'inactive', 'passive', '0': begin
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+        Exit;
+      end;
+
           '+', 'yes', 'on',   'true', 'enable', 'enabled', 'active',                          '1':
       begin
         Result := True;
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'yes', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
     end;
-    if inLiteralsOnly then raise Exception.Create('Argument `' + inStr + '` cannot be converted to boolean value');
+
+    if inLiteralsOnly then
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not literal', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      raise Exception.Create('Argument `' + inStr + '` cannot be converted to boolean value');
+    end;
   end;
 
-  try if StrToInt(inStr) = 0 then Exit; except end;
-  try if StrToFloat(inStr) = 0 then Exit; except end;
+  try
+    if StrToInt(inStr) = 0 then
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'int no', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      Exit;
+    end;
+  except end;
+
+  try
+    if StrToFloat(inStr) = 0 then
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'float no', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      Exit;
+    end;
+  except end;
+
   if inStr <> '' then Result := True;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 // settings read helpers
@@ -658,6 +727,8 @@ procedure TTrayBrowserApplication.ReadSettingsFromFile(const inPath: String; con
 var
   NoOverrideIcon: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if not NoOverride.ContainsKey('*') then
   begin
     NoOverrideIcon := NoOverride.ContainsKey('icon'); // remember icon override status before processing this batch
@@ -676,6 +747,8 @@ begin
           IconPathList.Add(IfThen(FilenameIsAbsolute(inConfig['icon']), inConfig['icon'], IncludeTrailingPathDelimiter(CleanAndExpandDirectory(inPath)) + inConfig['icon']));
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.ReadCommandLine(const inConfig: TTBStringDict);
@@ -685,6 +758,8 @@ var
   i: Integer;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   CommandLine.Clear;
   LRegexp := TRegExpr.Create;
   LNoOverrideAdd := TStringList.Create;
@@ -732,6 +807,8 @@ begin
   except end;
   FreeAndNil(LNoOverrideAdd);
   FreeAndNil(LRegexp);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.AddParsedSetting(const inConfig: TTBStringDict; const inKey: String; const inValue: String; const inNoOverrideAdd: TStringList);
@@ -739,6 +816,8 @@ var
   LRegexp: TRegExpr;
   s, s2: String;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   s := LowerCase(inKey);
   if not NoOverride.ContainsKey(s) then
   begin
@@ -770,6 +849,8 @@ begin
       else inConfig.AddOrSetValue(s, Trim(inValue)); // normal parameter
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.ParseSettings(const inText: String; const inConfig: TTBStringDict);
@@ -778,7 +859,14 @@ var
   LRegexp: TRegExpr;
   s: String;
 begin
-  if NoOverride.ContainsKey('*') then Exit; // if override was disabled completely, we have nothing to do
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if NoOverride.ContainsKey('*') then
+  begin
+    // if override was disabled completely, we have nothing to do
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no override', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   // parse
   LRegexp := TRegExpr.Create;
@@ -795,17 +883,22 @@ begin
   except end;
   FreeAndNil(LNoOverrideAdd);
   FreeAndNil(LRegexp);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserApplication.ReadResource(const inName: String): String;
 var
   LStream: TResourceStream;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := '';
   LStream := TResourceStream.Create(HINSTANCE, inName, RT_RCDATA);
   if LStream.Size > 1048576 then
   begin
     FreeAndNil(LStream);
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'too large', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Resource `' + inName + '` is too large');
   end;
   try
@@ -814,18 +907,31 @@ begin
     LStream.Read(Result[1], LStream.Size);
   except
     FreeAndNil(LStream);
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Failed to read resource `' + inName + '`');
   end;
   FreeAndNil(LStream);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result there
 end;
 
 function TTrayBrowserApplication.ReadFile(const inPath: String): String;
 var
   LStream: TFileStream;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := '';
-  if not FileExists(inPath) then raise Exception.Create('File `' + inPath + '` not found');
-  if FileSize(inPath) > 1048576 then raise Exception.Create('File `' + inPath + '` too large');
+  if not FileExists(inPath) then
+  begin
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not found', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result there
+    raise Exception.Create('File `' + inPath + '` not found');
+  end;
+  if FileSize(inPath) > 1048576 then
+  begin
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'too large', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result there
+    raise Exception.Create('File `' + inPath + '` too large');
+  end;
   LStream := TFileStream.Create(inPath, fmOpenRead or fmShareDenyNone);
   try
     LStream.Seek(0, soBeginning);
@@ -833,9 +939,12 @@ begin
     LStream.Read(Result[1], LStream.Size);
   except
     FreeAndNil(LStream);
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result there
     raise Exception.Create('Failed to read file `' + inPath + '`');
   end;
   FreeAndNil(LStream);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result there
 end;
 
 ////////////////////////////////////////////////////////////
@@ -843,32 +952,46 @@ end;
 
 constructor TTBSettingElement.Create(const inPtr: Pointer; const inName: String; const inDefault: Boolean; const inFlags: TTBSettingFlagsSet);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Initialize(inPtr, inName, inFlags);
   ValueType := tbsetBoolean;
   DefaultBool := inDefault;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 constructor TTBSettingElement.Create(const inPtr: Pointer; const inName: String; const inDefault: Integer; const inMin: Integer; const inMax: Integer; const inFlags: TTBSettingFlagsSet);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Initialize(inPtr, inName, inFlags);
   ValueType := tbsetInteger;
   DefaultInt := inDefault;
   IntMin := inMin;
   IntMax := inMax;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 constructor TTBSettingElement.Create(const inPtr: Pointer; const inName: String; const inDefault: String; const inMaxLength: Integer; const inFlags: TTBSettingFlagsSet);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Initialize(inPtr, inName, inFlags);
   ValueType := tbsetString;
   DefaultString := inDefault;
   StringMaxLength := inMaxLength;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 constructor TTBSettingElement.CreateChoice(const inPtr: Pointer; const inName: String; const inDefault: Integer; const inFlags: TTBSettingFlagsSet; const inChoices: array of TTBSettingChoiceDef; const inSelectors: array of TTBSettingChoiceDef);
 var
   LChoiceDef: TTBSettingChoiceDef;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Initialize(inPtr, inName, inFlags);
   ValueType := tbsetChoice;
   DefaultInt := inDefault;
@@ -876,16 +999,25 @@ begin
   Selectors := TTBSettingChoiceSelectorList.Create;
   for LChoiceDef in inChoices do Choices.Add(LChoiceDef.i, LChoiceDef.s);
   for LChoiceDef in inSelectors do Selectors.Add(LowerCase(LChoiceDef.s), LChoiceDef.i);
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 destructor TTBSettingElement.Destroy;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   FreeAndNil(Choices);
   FreeAndNil(Selectors);
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+  inherited;
 end;
 
 procedure TTBSettingElement.Initialize(const inPtr: Pointer; const inName: String; const inFlags: TTBSettingFlagsSet);
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Name := inName;
   NameLC := LowerCase(inName);
   ValueType := tbsetUndefined;
@@ -899,17 +1031,33 @@ begin
   StringMaxLength := 0;
   Choices := nil;
   Selectors := nil;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTBSettingElement.ApplyDefault;
 begin
-  if ValueType = tbsetUndefined then Exit;
-  if not Assigned(ValuePtr) then Exit;
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if ValueType = tbsetUndefined then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'undefined', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
+  if not Assigned(ValuePtr) then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not assigned', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
   case ValueType of
     tbsetBoolean: PBoolean(ValuePtr)^ := DefaultBool;
     tbsetInteger, tbsetChoice: PInteger(ValuePtr)^ := DefaultInt;
     tbsetString: PString(ValuePtr)^ := DefaultString;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTBSettingElement.ApplyConfig(const inConfig: TTBStringDict): Boolean;
@@ -917,11 +1065,29 @@ var
   i: Integer;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
-  if ValueType = tbsetUndefined then Exit;
-  if not Assigned(ValuePtr) then Exit;
+
+  if ValueType = tbsetUndefined then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'undefined', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if not Assigned(ValuePtr) then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not assigned', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   try
-    if not inConfig.ContainsKey(NameLC) then Exit;
+    if not inConfig.ContainsKey(NameLC) then
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no key', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      Exit;
+    end;
+
     s := inConfig[NameLC];
     case ValueType of
       tbsetBoolean:
@@ -967,14 +1133,29 @@ begin
       end;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTBSettingElement.Print(out outStr: String): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   outStr := '';
-  if ValueType = tbsetUndefined then Exit;
-  if not Assigned(ValuePtr) then Exit;
+
+  if ValueType = tbsetUndefined then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'undefined', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if not Assigned(ValuePtr) then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not assigned', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   try
     case ValueType of
       tbsetBoolean:
@@ -1005,11 +1186,17 @@ begin
       end;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserApplication.SettingChoiceDef(const inValue: Integer; const inName: String): TTBSettingChoiceDef;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.i := inValue;
   Result.s := inName;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF} // avoid tracing result here
 end;
 

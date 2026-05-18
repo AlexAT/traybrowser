@@ -20,6 +20,8 @@ procedure TTrayBrowserWindow.JSAPI(const inFunction: String; const inArgc: Integ
 var
   LResult: TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     case inFunction of
       // base window commands and information
@@ -172,6 +174,7 @@ begin
       else
       begin
         inReply.Add('ERROR', 'UNKNOWN_JS_CALL_FUNCTION');
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'unknown call', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
         Exit;
       end;
     end;
@@ -187,9 +190,11 @@ begin
     on e: Exception do
     begin
       inReply.Add('ERROR', 'EXCEPTION:' + e.Message);
-      {$IFDEF TB_DEBUG}TrayBrowserApplication.DebugLog('JS_CALL[' + inRequest['FUNCTION'] + ']: ' + e.Message, CEF_LOG_SEVERITY_WARNING){$ENDIF};
+      {$IFDEF TB_DEBUG}DebugLog('JS_CALL[' + inRequest['FUNCTION'] + ']: ' + e.Message, CEF_LOG_SEVERITY_WARNING){$ENDIF};
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -199,9 +204,28 @@ end;
 // well, need to stay threadsafe here, so main thread is used for actual message posting
 procedure TTrayBrowserWindow.PostJSEvent(const inEventArgs: String);
 begin
-  if not FWindowSettings.APIEnabled then Exit; // API is not enabled, no events available
-  if FExit.Terminating or FIsBrowserRestarting then Exit; // the window is terminating or the browser is restarting, no events anymore
-  if not Assigned(FWindowState.JSEventQueueLock) then Exit; // prevent corner case when this comes during window destruction
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.APIEnabled then
+  begin
+    // API is not enabled, no events available
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'api disabled', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
+  if FExit.Terminating or FIsBrowserRestarting then
+  begin
+    // the window is terminating or the browser is restarting, no events anymore
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'terminating', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
+  if not Assigned(FWindowState.JSEventQueueLock) then
+  begin
+    // prevent corner case when this comes during window destruction
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no lock', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   FWindowState.JSEventQueueLock.Acquire;
   try
@@ -212,24 +236,47 @@ begin
     end;
   except end;
   FWindowState.JSEventQueueLock.Release;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // string escape
 function TTrayBrowserWindow.QuoteJSString(const inString: String): String;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := '"' + StringToJSONString(inString, True) + '"';
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 // and this one is for external DLL integration and it explains the thread safety above
 procedure TTrayBrowserWindow.PostJSEventExternal(const inEventArgs: PChar); stdcall;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   PostJSEvent(String(inEventArgs)); // we rely on that this effectively copies the string from PChar, so DLLs do not need to hold the string buffer further
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.JSEventTimerTimer(Sender: TObject);
 begin
-  if FIsBrowserRestarting then Exit; // wait up while the browser is restarting, we may still lose some events while page reloads but at least we do not attempt to push them to closing browser
-  if not Assigned(FWindowState.JSEventQueueLock) then Exit; // this should never happen, but better safe than sorry
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if FIsBrowserRestarting then
+  begin
+    // wait up while the browser is restarting, we may still lose some events while page reloads but at least we do not attempt to push them to closing browser
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'restarting', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
+  if not Assigned(FWindowState.JSEventQueueLock) then
+  begin
+    // this should never happen, but better safe than sorry
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no lock', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   FWindowState.JSEventQueueLock.Acquire;
   try
@@ -244,6 +291,8 @@ begin
     if FWindowState.JSEventQueue.Count = 0 then JSEventTimer.Enabled := False; // stop ourselves till the next event comes
   except end;
   FWindowState.JSEventQueueLock.Release;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -255,7 +304,14 @@ end;
 
 function TTrayBrowserWindow.jsShow(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if FExit.Requested or TrayBrowserRootWindow.ExitRequestReceived then Exit; // do nothing if exit is requested
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if FExit.Requested or TrayBrowserRootWindow.ExitRequestReceived then
+  begin
+    // do nothing if exit is requested
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   if Visible and not FWindowSettings.AlwaysOnTop then FlashWindow(Handle, True); // this is Windows-specific way of indicating we want attention when we are not always on top and shown when visible
   Visible := True; // we must not grab focus on Show API call as we may just want to pop up without annoying user by switching window
@@ -264,18 +320,31 @@ begin
     if FWindowState.PreMinimizeWindowState <> wsMinimized then WindowState := FWindowState.PreMinimizeWindowState else WindowState := wsNormal; // return us to the normal window state if we were minimized, handle corner case for safety
     FormWindowStateChange(Self); // yes, this is necessary, programmatic changes do not fire the event
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsHide(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   FWindowState.WasVisible := False; // if Hide comes when we are already hidden, make sure root window does not restore us on application show
   Hide;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsFocus(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this is much like Show API call, but brings our window in focus
-  if FExit.Requested or TrayBrowserRootWindow.ExitRequestReceived then Exit; // do nothing if exit is requested
+  if FExit.Requested or TrayBrowserRootWindow.ExitRequestReceived then
+  begin
+    // do nothing if exit is requested
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   if not FWindowSettings.Main then TrayBrowserRootWindow.ShowApplication; // if this is not the main window, show the whole application first
   if WindowState = wsMinimized then
@@ -286,19 +355,27 @@ begin
   Show;
   BringToFront;
   ActiveControl := CEFBrowser;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsClose(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this call immediately terminates the window without any graceful OnExit notifications, available for all windows
   // if this is main window, all other windows will get graceful termination requests from the root window
   FWindowState.ExitEventNeeded := False;
   FExit.EventComplete := True;
   ExitRequest;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsExit(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // if this is main window, this call gracefully closes the whole application, otherwise it gracefully closes the current window or confirms the close
   if not FExit.Requested then
   begin
@@ -322,11 +399,17 @@ begin
       ExitRequest;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsIsVisible(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := Visible;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -336,6 +419,8 @@ function TTrayBrowserWindow.jsGetSize(const inArgc: Integer; const inRequest: TT
 var
   LSize: TSize;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FRememberedPosition.Active then LSize := FRememberedPosition.BrowserSize else LSize := FBrowserSize;
 
   if inPixelSize then
@@ -349,6 +434,8 @@ begin
      +  '"width":' + IntToStr(LSize.Width)
      +  ',"height":' + IntToStr(LSize.Height)
     + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetSize(const inArgc: Integer; const inRequest: TTBKVMessage; const inPixelSize: Boolean): TTBJSVariant;
@@ -357,6 +444,8 @@ var
   LDict: TTBStringDict;
   LSizeSet: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LSizeSet := False;
 
   if inArgc >= 2 then
@@ -398,7 +487,12 @@ begin
     FreeAndNil(LDict);
   end;
 
-  if not LSizeSet then Exit; // invalid arguments
+  if not LSizeSet then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   Result.vBoolean := False;
 
@@ -415,12 +509,16 @@ begin
     PositionOurselves(False, True); // keep monitor if resizing too much
     Result.vBoolean := True;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetPosition(const inArgc: Integer; const inRequest: TTBKVMessage; const inPixelSize: Boolean; const inDesktop: Boolean): TTBJSVariant;
 var
   LPosition: TPoint;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FRememberedPosition.Active then LPosition := FRememberedPosition.Window.Location else LPosition := BoundsRect.Location;
 
   if not inDesktop then
@@ -441,6 +539,8 @@ begin
      +  '"left":' + IntToStr(LPosition.X)
      +  ',"top":' + IntToStr(LPosition.Y)
     + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetPosition(const inArgc: Integer; const inRequest: TTBKVMessage; const inPixelSize: Boolean; const inDesktop: Boolean): TTBJSVariant;
@@ -450,6 +550,8 @@ var
   LDict: TTBStringDict;
   LPositionSet: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LPositionSet := False;
 
   if inArgc >= 2 then
@@ -491,11 +593,21 @@ begin
     FreeAndNil(LDict);
   end;
 
-  if not LPositionSet then Exit; // invalid arguments
+  if not LPositionSet then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   Result.vBoolean := False;
 
-  if not FWindowSettings.Movable then Exit; // impossible when not movable
+  if not FWindowSettings.Movable then
+  begin
+    // impossible when not movable
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not movable', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   if not inPixelSize then
   begin
@@ -510,7 +622,12 @@ begin
       and (LPosition.Y < IfThen(FRememberedPosition.Active, FRememberedPosition.Monitor.Height, FMonitorInfo.WorkArea.Height)) then
     begin
       if FRememberedPosition.Active then LPosition := LPosition + FRememberedPosition.Monitor.Location else LPosition := LPosition + FMonitorInfo.WorkArea.Location;
-    end else Exit; // invalid monitor position
+    end else
+    begin
+      // invalid monitor position
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid monitor position', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      Exit;
+    end;
   end;
 
   if (LPosition.X >= Screen.DesktopRect.Left) and (LPosition.Y >= Screen.DesktopRect.Top)
@@ -528,7 +645,14 @@ begin
     end;
     PositionOurselves;
     Result.vBoolean := True;
-  end else Exit; // invalid desktop position
+  end else
+  begin
+    // invalid desktop position
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid desktop position', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -538,6 +662,8 @@ function TTrayBrowserWindow.jsGetMonitorSize(const inArgc: Integer; const inRequ
 var
   LSize: TSize;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if FRememberedPosition.Active then LSize := FRememberedPosition.Monitor.Size else LSize := FMonitorInfo.WorkArea.Size;
 
   if not inPixelSize then
@@ -551,21 +677,31 @@ begin
      +  '"width":' + IntToStr(LSize.Width)
      +  ',"height":' + IntToStr(LSize.Height)
     + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetDesktopSize(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vJSON :=
       '{'
      +  '"width":' + IntToStr(Screen.WorkAreaRect.Width)
      +  ',"height":' + IntToStr(Screen.WorkAreaRect.Height)
     + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetWindowInfo(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this one is faster as we do not pre-position ourselves here as we do not provide on-monitor information
   Result.vJSON := GetWindowSizePositionJSON;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetScreenInfo(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -573,6 +709,8 @@ var
   i: Integer;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   PositionOurselves; // yes, this is slow, but take care monitor may change in the background, so retrieve new state to make sure this one is operating with relevant information
 
   // {
@@ -641,12 +779,16 @@ begin
     +    ']'
     +  '}';
   Result.vJSON := s;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetColorScheme(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 var
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   s := '"clBlack":"' + ColorToCSS(clBlack) + '"';
   s := s + ',"clMaroon":"' + ColorToCSS(clMaroon) + '"';
   s := s + ',"clGreen":"' + ColorToCSS(clGreen) + '"';
@@ -710,6 +852,8 @@ begin
   s := s + ',"clBtnHiLight":"' + ColorToCSS(clBtnHiLight) + '"';
 
   Result.vJSON := '{' + s + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -717,12 +861,20 @@ end;
 
 function TTrayBrowserWindow.jsMinimize(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.ShowOnTaskBar then Exit; // if window is not on taskbar, there is nowhere to minimize obviously
-  if not FWindowSettings.ShowOnTaskBar then Exit; // impossible if no taskbar icon
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.ShowOnTaskBar then
+  begin
+    // if window is not on taskbar, there is nowhere to minimize obviously
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no taskbar', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   if WindowState = wsMinimized then
   begin
     // impossible if already minimized, but indicate that
     Result.vBoolean := False;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'already minimized', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -731,15 +883,26 @@ begin
   WindowState := wsMinimized;
   FormWindowStateChange(Self); // yes, this is necessary, programmatic changes do not fire the event
   Result.vBoolean := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsMaximize(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if FWindowSettings.FullScreen <> tbfsNone then Exit; // we can only change to maximized state when we have no default fullscreen mode active
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if FWindowSettings.FullScreen <> tbfsNone then
+  begin
+    // we can only change to maximized state when we have no default fullscreen mode active
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'fullscreen', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   if WindowState = wsMaximized then
   begin
     // impossible if already maximized, but indicate that
     Result.vBoolean := False;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'already maximized', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -747,14 +910,19 @@ begin
   WindowState := wsMaximized;
   FormWindowStateChange(Self); // yes, this is necessary, programmatic changes do not fire the event
   Result.vBoolean := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsRestore(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if WindowState = wsNormal then
   begin
     // impossible if already normal, indicate that
     Result.vBoolean := False;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'already normal', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -763,26 +931,40 @@ begin
   else WindowState := wsNormal;
   FormWindowStateChange(Self); // yes, this is necessary, programmatic changes do not fire the event
   Result.vBoolean := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetWindowState(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case WindowState of
     wsNormal: Result.vString := 'normal';
     wsMinimized: Result.vString := 'minimized';
     wsMaximized: Result.vString := 'maximized';
     else Result.vString := 'unknown';
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsIsInFocus(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := Active;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsWasPositionRestored(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := FWindowState.PositionRestored;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -795,11 +977,14 @@ var
   LPositionSet: Boolean;
   LSizeSet: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if (inRequest['ARGV[1].TYPE'] = 'NULL') or (inRequest['ARGV[1].TYPE'] = 'UNDEFINED') then
   begin
     // reset region
     ResetCustomDragRegion;
     Result.vBoolean := True;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'reset', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -865,7 +1050,12 @@ begin
     FreeAndNil(LDict);
   end;
 
-  if (not LPositionSet) or (not LSizeSet) then Exit; // invalid arguments
+  if (not LPositionSet) or (not LSizeSet) then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   Result.vBoolean := False;
   if (LRect.Left >= 0) and (LRect.Left <= 65535) and (LRect.Top >= 0) and (LRect.Top <= 65535)
@@ -885,6 +1075,8 @@ begin
     // invalid custom drag region means we reset one
     ResetCustomDragRegion;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -892,21 +1084,39 @@ end;
 
 function TTrayBrowserWindow.jsStart(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Navigate(FWindowSettings.URL);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsNavigate(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Navigate(Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', '', 64000)));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsRestartBrowser(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   FBrowserSize := FWindowSettings.Size;
   FIsBrowserRestarting := True;
   if Assigned(Chromium) then Chromium.CloseAllBrowsers;
   PositionOurselves;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -914,7 +1124,11 @@ end;
 
 function TTrayBrowserWindow.jsGetParameters(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vString := FWindowSettings.Parameters;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetCommandLine(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -922,6 +1136,8 @@ var
   s: String;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   s := '';
   for i := 0 to TrayBrowserApplication.CommandLine.Count - 1 do
   begin
@@ -929,6 +1145,8 @@ begin
     s := s + QuoteJSString(TrayBrowserApplication.CommandLine[i]);
   end;
   Result.vJSON := '[' + s + ']';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetLoggedInUser(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -936,6 +1154,8 @@ var
   i: LongWord;
   ws: WideString = '';
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   i := 4096;
   SetLength(ws, i);
   if (not GetUserNameExW(2, PWideChar(ws), i)) then
@@ -943,19 +1163,47 @@ begin
   else
     SetLength(ws, i);
   Result.vString := String(ws);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetTitle(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Caption := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', '', 250));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetHint(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   TrayBrowserRootWindow.TrayIcon.Hint := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', '', 250));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetApplicationSettings(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -965,6 +1213,8 @@ var
   s: String;
   b: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   s := '';
   TrayBrowserApplication.TempSettings := TrayBrowserApplication.Settings;
   LDict := TTBStringDict.Create;
@@ -979,6 +1229,8 @@ begin
   except end;
   FreeAndNil(LDict);
   Result.vJSON := '{' + s + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetApplicationSettings(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -986,7 +1238,14 @@ var
   LSettings: TTBStringDict;
   kv: TTBStringPair;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   Result.vBoolean := False;
   LSettings := TTBStringDict.Create;
@@ -1001,6 +1260,8 @@ begin
     Result.vBoolean := True;
   except end;
   FreeAndNil(LSettings);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetWindowSettings(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1010,6 +1271,8 @@ var
   s: String;
   b: Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   s := '';
   TrayBrowserApplication.TempWindowSettings := FWindowSettings;
   LDict := TTBStringDict.Create;
@@ -1024,6 +1287,8 @@ begin
   except end;
   FreeAndNil(LDict);
   Result.vJSON := '{' + s + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetWindowSettings(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1034,7 +1299,14 @@ var
   kv: TTBStringPair;
   s: String;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   LSettings := TTBStringDict.Create;
   LDict := TTBStringDict.Create;
@@ -1123,6 +1395,7 @@ begin
       TrayBrowserApplication.TempWindowSettings.RestartSource := Self;
       TrayBrowserRootWindow.CreateBrowserWindow; // newly created window will use our settings, copy our internals, relink our browser, take our glasses and bike and then close us
       Result.vString := 'restarting';
+      {$IFDEF TB_TRACE_FEE}DebugTraceMessage(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, 'The window is restarting, routine exit cycle will happen after destruction and so traced as missing exits');{$ENDIF}
     end else
     begin
       // just apply safe settings and reposition
@@ -1135,6 +1408,8 @@ begin
   FreeAndNil(LDict2);
   FreeANdNil(LDict);
   FreeAndNil(LSettings);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1144,32 +1419,72 @@ function TTrayBrowserWindow.jsAddMenuItem(const inArgc: Integer; const inRequest
 var
   i: Integer;
 begin
-  if inArgc < 2 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 2 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   try
     i := MsgArgToInt(inRequest, 'ARGV[1]');
-    if i = 0 then raise Exception.Create('Invalid argument');
+    if i = 0 then
+    begin
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid arg[1]', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      raise Exception.Create('Invalid argument');
+    end;
     TrayBrowserRootWindow.AddUserMenuItem(FWindowID, i, Trim(MsgArgToString(inRequest, 'ARGV[2]', 200)));
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsClearMenu(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   TrayBrowserRootWindow.ClearUserMenu(FWindowID);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsClearMenuAll(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   TrayBrowserRootWindow.ClearUserMenu('*');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsShowBalloon(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 var
   i: Integer;
 begin
-  if inArgc < 3 then Exit; // invalid arguments
-  if not FWindowSettings.Main then Exit; // this one is only allowed in the main window
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 3 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if not FWindowSettings.Main then
+  begin
+    // this one is only allowed in the main window
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   TrayBrowserRootWindow.HideBalloon;
   case LowerCase(Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]'))) of
@@ -1181,12 +1496,24 @@ begin
   i := MsgArgToIntWithNullUndef(inRequest, 'ARGV[2]', 30);
   if (i < 1) or (i > 300) then i := 30;
   TrayBrowserRootWindow.ShowBalloon(FWindowID, Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[3]', '', 64000)), IfThen(inRequest.ContainsKey('ARGV[4]'), Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[4]', '', 64000))), i);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsHideBalloon(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // this one is only allowed in the main window
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // this one is only allowed in the main window
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   TrayBrowserRootWindow.HideBalloon;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1196,40 +1523,100 @@ function TTrayBrowserWindow.jsReadKV(const inArgc: Integer; const inRequest: TTB
 var
   s: String;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   if TrayBrowserRootWindow.KVStoreRead('kvuser', Trim(MsgArgToString(inRequest, 'ARGV[1]', 1000)), s) then Result.vString := s;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsWriteKV(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 2 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 2 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vBoolean := TrayBrowserRootWindow.KVStoreWrite('kvuser', Trim(MsgArgToString(inRequest, 'ARGV[1]', 1000)), Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[2]', '', 16777216)));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsDeleteKV(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vBoolean := TrayBrowserRootWindow.KVStoreDelete('kvuser', Trim(MsgArgToString(inRequest, 'ARGV[1]', 1000)));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsReadTempKV(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 var
   s: String;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   if TrayBrowserRootWindow.MemoryKVStoreRead(Trim(MsgArgToString(inRequest, 'ARGV[1]', 1000)), s) then Result.vString := s;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsWriteTempKV(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 2 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 2 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vBoolean := TrayBrowserRootWindow.MemoryKVStoreWrite(Trim(MsgArgToString(inRequest, 'ARGV[1]', 1000)), Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[2]', '', 16777216)));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsDeleteTempKV(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vBoolean := TrayBrowserRootWindow.MemoryKVStoreDelete(Trim(MsgArgToString(inRequest, 'ARGV[1]', 1000)));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1239,7 +1626,14 @@ function TTrayBrowserWindow.jsOpenBrowser(const inArgc: Integer; const inRequest
 var
   s: String;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   s := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', '', 64000));
   if (MidStr(s, 1, 7) = 'http://') or (MidStr(s, 1, 8) = 'https://') or (MidStr(s, 1, 6) = 'ftp://') or (MidStr(s, 1, 7) = 'mailto:') then
@@ -1247,6 +1641,8 @@ begin
     OpenURL(s);
     Result.vBoolean := True;
   end else Result.vBoolean := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsExec(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1260,12 +1656,20 @@ var
   s, s2, s3, s4: String;
   i: Integer;
 begin
-  if inArgc < 5 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 5 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   if (not TrayBrowserApplication.Settings.AllowExec) and (not TrayBrowserApplication.Settings.AllowSystemInfo) then
   begin
     // process execution is not allowed at all anyhow
     Result.vBoolean := False;
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not allowed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -1274,7 +1678,11 @@ begin
   LTimeout := MsgArgToIntWithNullUndef(inRequest, 'ARGV[5]', -1); // <0 means no timeout
 
   LCommand := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[2]', '', 4000));
-  if LCommand = '' then Exit;
+  if LCommand = '' then
+  begin
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no command', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   case (LMode and 3) of
     tbeHide: LWMode := tbewHide;
@@ -1303,6 +1711,7 @@ begin
         begin
           FreeAndNil(LParameters);
           Result.vBoolean := False; // failed execution
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'failed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           Exit;
         end;
         LCommand := LParameters[0];
@@ -1456,6 +1865,7 @@ begin
     begin
       // no, goodbye
       Result.vBoolean := False;
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not allowed (parse)', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
       Exit;
     end;
 
@@ -1517,6 +1927,7 @@ begin
     begin
       // nope
       Result.vBoolean := False;
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not allowed (filter)', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
       Exit;
     end;
 
@@ -1530,6 +1941,8 @@ begin
   end;
 
   FreeAndNil(LParameters);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1537,15 +1950,33 @@ end;
 
 function TTrayBrowserWindow.jsRegisterEvent(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   case LowerCase(Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]'))) of
     'onexit': FWindowState.ExitEventNeeded := True; // graceful exit event is registered, honor it on exit
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsClearEvent(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   case LowerCase(Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]'))) of
     'onexit':
     begin
@@ -1554,6 +1985,8 @@ begin
       FWindowState.ExitEventNeeded := False;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1561,17 +1994,29 @@ end;
 
 function TTrayBrowserWindow.jsGetWindowID(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vString := FWindowID;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetMainWindowId(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vString := TrayBrowserRootWindow.MainWindowID;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsIsMainWindow(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := FWindowSettings.Main;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetWindowList(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1580,7 +2025,14 @@ var
   i: Integer;
   s: String;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   LIDList := TStringList.Create;
   try
@@ -1594,6 +2046,8 @@ begin
      Result.vJSON := '[' + s + ']';
   except end;
   FreeAndNil(LIDList);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsCreateWindow(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1603,10 +2057,28 @@ var
   LWindow: TTrayBrowserWindow;
   kv: TTBStringPair;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
-  if TrayBrowserRootWindow.ExitRequestReceived then Exit; // do not do anything when exit is happening
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  if inArgc < 1 then Exit; // invalid arguments
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if TrayBrowserRootWindow.ExitRequestReceived then
+  begin
+    // do not do anything when exit is happening
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   LSettings := TTBStringDict.Create;
   try
@@ -1621,6 +2093,8 @@ begin
     if Assigned(LWindow) then Result.vString := LWindow.FWindowID;
   except end;
   FreeAndNil(LSettings);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsWindowExists(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1628,13 +2102,22 @@ var
   s: String;
   LWindow: TTrayBrowserWindow;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   s := Trim(MsgArgToString(inRequest, 'ARGV[1]', 128));
   Result.vBoolean := False;
   LWindow := nil;
   try LWindow := TTrayBrowserWindow(TrayBrowserRootWindow.GetBrowserWindow(s)); except end;
   if Assigned(LWindow) then Result.vBoolean := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsWindowMessage(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1642,7 +2125,14 @@ var
   s: String;
   LWindow: TTrayBrowserWindow;
 begin
-  if inArgc < 2 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 2 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   s := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', TrayBrowserRootWindow.MainWindowID, 128));
   if s = '' then s := TrayBrowserRootWindow.MainWindowID;
@@ -1652,6 +2142,8 @@ begin
     LWindow.PostJSEvent('"onmessage",' + QuoteJSString(FWindowID) + ',' + QuoteJSString(MsgArgToString(inRequest, 'ARGV[2]', 1048576)));
     Result.vBoolean := True;
   end else Result.vBoolean := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsWindowBroadcast(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1662,9 +2154,21 @@ var
   i: Integer;
   s: String;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  if inArgc < 1 then Exit; // invalid arguments
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   LWithSelf := False;
   if inRequest.ContainsKey('ARGV[2]') then
@@ -1684,42 +2188,104 @@ begin
      end;
   except end;
   FreeAndNil(LIDList);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsIsAnyWindowVisible(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := TrayBrowserRootWindow.CheckApplicationVisibility(True);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsIsApplicationVisible(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := TrayBrowserRootWindow.CheckApplicationVisibility;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsIsApplicationInFocus(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vBoolean := TrayBrowserRootWindow.CheckApplicationFocus;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsApplicationShow(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
-  if TrayBrowserRootWindow.ExitRequestReceived then Exit; // do not do anything when exit is happening
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if TrayBrowserRootWindow.ExitRequestReceived then
+  begin
+    // do not do anything when exit is happening
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   TrayBrowserRootWindow.ShowApplication;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsApplicationHide(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
-  if TrayBrowserRootWindow.ExitRequestReceived then Exit; // do not do anything when exit is happening
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if TrayBrowserRootWindow.ExitRequestReceived then
+  begin
+    // do not do anything when exit is happening
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   TrayBrowserRootWindow.HideApplication;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsApplicationTerminate(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
-  if TrayBrowserRootWindow.ExitRequestReceived then Exit; // do not do anything when exit is happening
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if TrayBrowserRootWindow.ExitRequestReceived then
+  begin
+    // do not do anything when exit is happening
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit requested', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   TrayBrowserRootWindow.TerminateTrayBrowser;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetSavedPosition(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1729,12 +2295,19 @@ var
   LSize: TSize;
   s, s2: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LPositionID := FWindowSettings.PositionID;
   if inArgc >= 1 then
   begin
     LPositionID := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', '', 1024));
   end;
-  if (not FWindowSettings.Main) and (LPositionID = '') then Exit; // not a main window and no PositionID = no result
+  if (not FWindowSettings.Main) and (LPositionID = '') then
+  begin
+    // not a main window and no PositionID = no result
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   s2 := '';
 
@@ -1773,6 +2346,8 @@ begin
   end;
 
   Result.vJSON := '{' + s2 + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsSetSavedPosition(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1783,8 +2358,21 @@ var
   LSize: TSize;
   LHasPoint, LHasSize: Boolean;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
-  if inArgc < 2 then Exit;
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  if inArgc < 2 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   LPositionID := Trim(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]', '', 1024));
   LDict := TTBStringDict.Create;
@@ -1848,6 +2436,8 @@ begin
     Result.vBoolean := True;
   except end;
   FreeAndNil(LDict);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1858,8 +2448,20 @@ var
   LLastArgvKey, LWindowID: String;
   LWindow: TTrayBrowserWindow;
 begin
-  if inMainWindowOnly and (not FWindowSettings.Main) then Exit;
-  if inArgc < 1 then Exit;
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inMainWindowOnly and (not FWindowSettings.Main) then
+  begin
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   try
     LLastArgvKey := 'ARGV[' + IntToStr(inArgc) + ']';
@@ -1876,9 +2478,11 @@ begin
     on e: Exception do
     begin
       inReply.Add('ERROR', 'EXCEPTION:' + e.Message + ' [MARSHALLING]');
-      {$IFDEF TB_DEBUG}TrayBrowserApplication.DebugLog('JS_CALL[' + inRequest['FUNCTION'] + ']: ' + e.Message + ' [MARSHALLING]', CEF_LOG_SEVERITY_WARNING){$ENDIF};
+      {$IFDEF TB_DEBUG}DebugLog('JS_CALL[' + inRequest['FUNCTION'] + ']: ' + e.Message + ' [MARSHALLING]', CEF_LOG_SEVERITY_WARNING){$ENDIF};
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1886,8 +2490,18 @@ end;
 
 function TTrayBrowserWindow.jsDebugLog(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if inArgc < 1 then Exit; // invalid arguments
-  TrayBrowserApplication.DebugLog(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]'));
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 1 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
+  DebugLog(MsgArgToStringWithNullUndef(inRequest, 'ARGV[1]'));
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1895,32 +2509,56 @@ end;
 
 function TTrayBrowserWindow.jsGetWidth(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vInteger := IfThen(FRememberedPosition.Active, FRememberedPosition.BrowserSize.Width, FBrowserSize.Width); // browser dots
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetHeight(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vInteger := IfThen(FRememberedPosition.Active, FRememberedPosition.BrowserSize.Height, FBrowserSize.Height); // browser dots
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetLeft(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vInteger := IfThen(FRememberedPosition.Active, Max(0, ScaleToBrowser(FRememberedPosition.Window.Left - FRememberedPosition.Monitor.Left, FRememberedPosition.DPI)), Max(0, ScaleToBrowser(Left - FMonitorInfo.WorkArea.Left, FMonitorInfo.DPI))); // browser dots
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetTop(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vInteger := IfThen(FRememberedPosition.Active, Max(0, ScaleToBrowser(FRememberedPosition.Window.Top - FRememberedPosition.Monitor.Top, FRememberedPosition.DPI)), Max(0, ScaleToBrowser(Top - FMonitorInfo.WorkArea.Top, FMonitorInfo.DPI))); // browser dots
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetScreenWidth(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vInteger := IfThen(FRememberedPosition.Active, ScaleToBrowser(FRememberedPosition.Monitor.Width, FMonitorInfo.DPI), ScaleToBrowser(FMonitorInfo.WorkArea.Width, FMonitorInfo.DPI)); // browser dots
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetScreenHeight(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result.vInteger := IfThen(FRememberedPosition.Active, ScaleToBrowser(FRememberedPosition.Monitor.Height, FMonitorInfo.DPI), ScaleToBrowser(FMonitorInfo.WorkArea.Height, FMonitorInfo.DPI)); // browser dots
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -1928,20 +2566,50 @@ end;
 
 function TTrayBrowserWindow.jsGetApplicationPath(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vString := TrayBrowserApplication.AppPath;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetRuntimePath(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vString := TrayBrowserApplication.RunPath;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsGetSettingsPath(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 begin
-  if not FWindowSettings.Main then Exit; // main window only
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not FWindowSettings.Main then
+  begin
+    // main window only
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   Result.vString := TrayBrowserApplication.DataPath;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.jsExecSyncCheck(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
@@ -1951,7 +2619,14 @@ var
   LProcess: TTBExecProcess;
   s: String;
 begin
-   if inArgc < 2 then Exit; // invalid arguments
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if inArgc < 2 then
+  begin
+    // invalid arguments
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   try
     LGUID := Trim(MsgArgToString(inRequest, 'ARGV[1]')); // GUID
@@ -1983,11 +2658,13 @@ begin
           except end;
 
           // and we are done
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'done', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           Exit;
         end else
         begin
           // still running
           Result.vBoolean := True;
+          {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'running', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
           Exit;
         end;
       end;
@@ -1996,6 +2673,8 @@ begin
 
   // we somehow failed
   Result.vBoolean := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 // here we unsuppress 'function result does not seem to be set' back, it was suppressed as if TTBJSVariant is not initialized, it is tbjvEmpty by default
@@ -2007,6 +2686,8 @@ end;
 
 function TTrayBrowserWindow.GetWindowSizePositionJSON: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // {
   //   width, height, // preset (via windows settings or API) width and height, this one is normally equal to width and height except when maximized (basically size to return to when restored), accurate
   //   actualWidth, actualHeight, // actual width and height in browser dots (before scaling to monitor DPI), this one should be equal (+/- 1 dot) to the window size reported by browser
@@ -2085,14 +2766,20 @@ begin
     +   ',"sizeAlign":' + IntToStr(IfThen(FMonitorInfo.ScalingAlignment <> 0, Round(FMonitorInfo.ScalingAlignment * 96 / FMonitorInfo.DPI), 1))
     +   ',"screenSizeAlign":' + IntToStr(IfThen(FMonitorInfo.ScalingAlignment <> 0, Round(FMonitorInfo.ScalingAlignment), 1))
     + '}';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.ColorToCSS(const inColor: TColor): String;
 var
   RGB: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   RGB := ColorToRGB(inColor);
   Result := '#' + LowerCase(Red(RGB).ToHexString(2)) + LowerCase(Green(RGB).ToHexString(2)) + LowerCase(Blue(RGB).ToHexString(2));
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 ////////////////////////////////////////////////////////////
@@ -2100,6 +2787,8 @@ end;
 
 function TTrayBrowserWindow.MsgArgToBool(const inMessage: TTBKVMessage; const inIndex: String; const inUseLiterals: Boolean = False; const inLiteralsOnly: Boolean = False): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     case inMessage[inIndex + '.TYPE'] of
@@ -2107,88 +2796,159 @@ begin
       'FLOAT': if StrToFloat(inMessage[inIndex]) <> 0 then Result := True;
       'STRING': Result := TrayBrowserApplication.StrArgToBool(inMessage[inIndex], inUseLiterals, inLiteralsOnly);
       'NULL', 'UNDEFINED': Result := False;
-      else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to boolean');
+      else
+      begin
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+        raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to boolean');
+      end;
     end;
   except
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to boolean');
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.MsgArgToInt(const inMessage: TTBKVMessage; const inIndex: String): Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     case inMessage[inIndex + '.TYPE'] of
       'STRING','INT','BOOL': Result := StrToInt(inMessage[inIndex]);
       'FLOAT': Result := Round(StrToFloat(inMessage[inIndex], TrayBrowserApplication.FormatSettings));
-      else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to integer');
+      else
+      begin
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+        raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to integer');
+      end;
     end;
   except
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to integer');
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.MsgArgToIntWithNullUndef(const inMessage: TTBKVMessage; const inIndex: String; const inOnNullUndefined: Integer = 0): Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     case inMessage[inIndex + '.TYPE'] of
       'STRING','INT','BOOL': Result := StrToInt(inMessage[inIndex]);
       'FLOAT': Result := Round(StrToFloat(inMessage[inIndex], TrayBrowserApplication.FormatSettings));
       'NULL','UNDEFINED': Result := inOnNullUndefined;
-      else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to integer');
+      else
+      begin
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+        raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to integer');
+      end;
     end;
   except
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to integer');
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.MsgArgToFloat(const inMessage: TTBKVMessage; const inIndex: String): Float;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     case inMessage[inIndex + '.TYPE'] of
       'STRING','INT','BOOL','FLOAT': Result := StrToFloat(inMessage[inIndex], TrayBrowserApplication.FormatSettings);
-      else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to floating point');
+      else
+      begin
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+        raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to floating point');
+      end;
     end;
   except
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to floating point');
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.MsgArgToFloatWithNullUndef(const inMessage: TTBKVMessage; const inIndex: String; const inOnNullUndefined: Float = 0): Float;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     case inMessage[inIndex + '.TYPE'] of
       'STRING','INT','BOOL','FLOAT': Result := StrToFloat(inMessage[inIndex], TrayBrowserApplication.FormatSettings);
       'NULL','UNDEFINED': Result := inOnNullUndefined;
-      else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to floating point');
+      else
+      begin
+        {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+        raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to floating point');
+      end;
     end;
   except
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to floating point');
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.MsgArgToString(const inMessage: TTBKVMessage; const inIndex: String; const inMaxLength: Integer = -1): String;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case inMessage[inIndex + '.TYPE'] of
     'STRING','INT','BOOL','FLOAT': Result := inMessage[inIndex];
-    else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string');
+    else
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string');
+    end;
   end;
-  if (inMaxLength >= 0) and (Length(Result) > inMaxLength) then raise Exception.Create('Message argument ' + inIndex + ' is too long');
+
+  if (inMaxLength >= 0) and (Length(Result) > inMaxLength) then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'too long (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    raise Exception.Create('Message argument ' + inIndex + ' is too long');
+  end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserWindow.MsgArgToStringWithNullUndef(const inMessage: TTBKVMessage; const inIndex: String; const inOnNullUndefined: String = ''; const inMaxLength: Integer = -1): String;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case inMessage[inIndex + '.TYPE'] of
     'STRING','INT','BOOL','FLOAT': Result := inMessage[inIndex];
     'NULL','UNDEFINED': Result := inOnNullUndefined;
-    else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string');
+    else
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+      raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string');
+    end;
   end;
-  if (inMaxLength >= 0) and (Length(Result) > inMaxLength) then raise Exception.Create('Message argument ' + inIndex + ' is too long');
+
+  if (inMaxLength >= 0) and (Length(Result) > inMaxLength) then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'too long (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    raise Exception.Create('Message argument ' + inIndex + ' is too long');
+  end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.MsgArgObjectToStringDict(const inMessage: TTBKVMessage; const inIndex: String; const inDict: TTBStringDict; const inLowerCaseKeys: Boolean = True; const inWithArrays: Boolean = False; const inMaxCount: Integer = -1; const inMaxLength: Integer = -1);
 var
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case inMessage[inIndex + '.TYPE'] of
     'OBJECT':
     begin
@@ -2208,16 +2968,29 @@ begin
         inDict.AddOrSetValue(IntToStr(i - 1), MsgArgToString(inMessage, inIndex + '[' + IntToStr(i) + ']', inMaxLength));
     end;
 
-    else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string dictionary');
+    else
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+      raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string dictionary');
+    end;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.MsgArgObjectToStringDictWithNullUndef(const inMessage: TTBKVMessage; const inIndex: String; const inDict: TTBStringDict; const inLowerCaseKeys: Boolean = True; const inWithArrays: Boolean = False; const inOnNullUndefined: String = ''; const inMaxCount: Integer = -1; const inMaxLength: Integer = -1);
 var
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case inMessage[inIndex + '.TYPE'] of
-    'NULL','UNDEFINED': Exit; // nothing
+    'NULL','UNDEFINED':
+    begin
+      // nothing
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'null-undefined', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+      Exit;
+    end;
 
     'OBJECT':
     begin
@@ -2237,17 +3010,39 @@ begin
         inDict.AddOrSetValue(IntToStr(i - 1), MsgArgToStringWithNullUndef(inMessage, inIndex + '[' + IntToStr(i) + ']', inOnNullUndefined, inMaxLength));
     end;
 
-    else raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string dictionary');
+    else
+    begin
+      {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+      raise Exception.Create('Message argument ' + inIndex + ' cannot be converted to string dictionary');
+    end;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserWindow.IsMsgArgScalar(const inMessage: TTBKVMessage; const inIndex: String): Boolean;
 begin
-  if not inMessage.ContainsKey(inIndex) then raise Exception.Create('Message argument ' + inIndex + ' not found');
-  if not inMessage.ContainsKey(inIndex + '.TYPE') then raise Exception.Create('Message argument ' + inIndex + ' not found');
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  Result := False;
+
+  if not inMessage.ContainsKey(inIndex) then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no argument (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    raise Exception.Create('Message argument ' + inIndex + ' not found');
+  end;
+
+  if not inMessage.ContainsKey(inIndex + '.TYPE') then
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no type (' + inIndex + ')', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    raise Exception.Create('Message argument ' + inIndex + ' not found');
+  end;
+
   case inMessage[inIndex + '.TYPE'] of
     'STRING','INT','BOOL','FLOAT','NULL': Result := True;
     else Result := False;
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 

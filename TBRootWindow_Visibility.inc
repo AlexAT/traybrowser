@@ -19,7 +19,14 @@ var
   LWindowList, LWindowList2: TStringList;
   i, j: Integer;
 begin
-  if ExitRequestReceived then Exit; // do not show any application windows when exiting
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if ExitRequestReceived then
+  begin
+    // do not show any application windows when exiting
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'exit request received', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   FocusTimer.Enabled := False; // stop focus lost timer
   ApplicationInFocus := True; // application gets focus after that
@@ -115,6 +122,8 @@ begin
   except end;
   ApplicationChangingVisibility := False;
   FreeAndNil(LWindowList);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.FocusEligibleWindow;
@@ -122,7 +131,14 @@ var
   LWindow, LWindowE, LWindowM: TTrayBrowserWindow;
   i: Integer;
 begin
-  if ApplicationChangingVisibility then Exit; // application is still undergoing visibility changes, don't
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if ApplicationChangingVisibility then
+  begin
+    // application is still undergoing visibility changes, don't
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'changing visibility', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   // activate last active visible and non-minimized window, if nothing can be activated, just activate main window
   LWindowE := nil; // eligible window
@@ -147,45 +163,71 @@ begin
   TrayBrowserSynchronizeWidgetSet;
   FocusTimer.Enabled := False;
   ApplicationInFocus := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.HideApplication;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   FocusTimer.Enabled := False; // stop focus lost timer
   ApplicationInFocus := False; // application loses focus after that
 
-  if not CheckApplicationVisibility(True) then Exit; // nothing at all is visible, nothing more to do
+  if not CheckApplicationVisibility(True) then
+  begin
+    // nothing at all is visible, nothing more to do
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not visible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   // send hide command to all windows, preventing any focus updates and visibility state storage
   ApplicationChangingVisibility := True;
   for LWPair in WindowRegistry do
     if TTrayBrowserWindow(LWPair.Value).Visible then TTrayBrowserWindow(LWPair.Value).Hide;
   ApplicationChangingVisibility := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.ApplicationActivate(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // we have got focus
   ApplicationInFocus := True;
   FocusTimer.Enabled := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.ApplicationDeactivate(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this is tricky. we can lose focus i.e. due to window switch or clicking on our own tray icon, so we need to wait just a little bit to see if we get some other event until we really consider us lost focus
   if CheckApplicationVisibility(True) then FocusTimer.Enabled := True else ApplicationInFocus := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.CheckApplicationVisibility(const inAnyWindow: Boolean = False): Boolean;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   TrayBrowserSynchronizeWidgetSet;
 
-  if WindowRegistry.Count = 0 then Exit; // rare corner case
+  if WindowRegistry.Count = 0 then
+  begin
+    // rare corner case
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no windows', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   // first, check if anything is visible at all (quick check for inAnyWindow = True)
   for LWPair in WindowRegistry do
@@ -200,11 +242,17 @@ begin
     if (not inAnyWindow) and (not TTrayBrowserWindow(LWPair.Value).Visible) and TTrayBrowserWindow(LWPair.Value).FWindowState.WasVisible then
     begin
       Result := False;
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not fully visible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
       Exit;
     end;
   end;
 
-  if not Result then Exit; // if nothing is visible, no more checking
+  if not Result then
+  begin
+    // if nothing is visible, no more checking
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'nothing visible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   // additionally, if inAnyWindow = False, check for all windows that need to be visible to be visible
   if not inAnyWindow then
@@ -214,18 +262,28 @@ begin
       if (not TTrayBrowserWindow(LWPair.Value).Visible) and TTrayBrowserWindow(LWPair.Value).FWindowState.WasVisible then
       begin
         Result := False;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'any: not fully visible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.CheckApplicationMinimized: Boolean;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
-  if not CheckApplicationVisibility(True) then Exit; // nothing is visible and so minimized state is irrelevant, return false
+  if not CheckApplicationVisibility(True) then
+  begin
+    // nothing is visible and so minimized state is irrelevant, return false
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'nothing visible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
 
   Result := True;
   for LWPair in WindowRegistry do
@@ -236,12 +294,16 @@ begin
       Break;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.CheckApplicationStayOnTop: Boolean;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   for LWPair in WindowRegistry do
   begin
@@ -251,12 +313,16 @@ begin
       Break;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.CheckApplicationFocus: Boolean;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   TrayBrowserSynchronizeWidgetSet;
   for LWPair in WindowRegistry do
@@ -267,12 +333,16 @@ begin
       Break;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.CheckApplicationKiosk: Boolean;
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   TrayBrowserSynchronizeWidgetSet;
   for LWPair in WindowRegistry do
@@ -283,13 +353,23 @@ begin
       Break;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.WindowGotFocus(inWindowID: String);
 var
   i: Integer;
 begin
-  if ApplicationChangingVisibility then Exit; // aplication is in massive visibility change, ignore
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if ApplicationChangingVisibility then
+  begin
+    // aplication is in massive visibility change, ignore
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'changing visibility', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
   try
     repeat
       i := WindowFocusList.IndexOf(inWindowID);
@@ -297,19 +377,31 @@ begin
     until i < 0;
   except end;
   WindowFocusList.Add(inWindowID);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.FocusTimerTimer(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // when this timer fires, we consider ourselves losing focus for real
   FocusTimer.Enabled := False;
   ApplicationInFocus := True; // let us assume we still have focus if this timer fired
-  if CheckApplicationFocus then Exit; // one of our windows is active, we have not lost the focus
+  if CheckApplicationFocus then
+  begin
+    // one of our windows is active, we have not lost the focus
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'still in focus', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
+
   ApplicationInFocus := False; // yup, lost focus completely
 
   // application autohide
   if TrayBrowserApplication.Settings.AutoHide then
     if (not CheckApplicationMinimized) and (not CheckApplicationKiosk) then // do not autohide when minimized or some window is using kiosk mode
     HideApplication;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 

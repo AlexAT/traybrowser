@@ -20,12 +20,20 @@ var
   LGUID: TGuid;
   LProcess: TTBExecProcess;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := '';
-  if FWindowState.ExecProcesses.Count >= tbeMaxProcesses then Exit; // limit number of processes invoked to prevent accidental process bombing
+  if FWindowState.ExecProcesses.Count >= tbeMaxProcesses then
+  begin
+    // limit number of processes invoked to prevent accidental process bombing
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'max reached', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+    Exit;
+  end;
+
   try
     LProcess := TTBExecProcess.Create(nil);
     repeat
-      if CreateGUID(LGUID) <> 0 then TrayBrowserApplication.Die('Failed to generate executed process GUID');
+      if CreateGUID(LGUID) <> 0 then Die('Failed to generate executed process GUID');
       LProcess.XTBGUID := LGUID.ToString;
     until (not FWindowState.ExecProcesses.ContainsKey(LProcess.XTBGUID));
     LProcess.XTBCallbackID := inCallbackID;
@@ -63,8 +71,8 @@ begin
       tbewMaximize: LProcess.ShowWindow := swoMaximize;
     end;
     LProcess.OnRunCommandEvent := @OnExecProcessEvent;
-    ServiceTimer.Enabled := True; // enable service timer as it reaps complete processes
     FWindowState.ExecProcesses.Add(LProcess.XTBGUID, LProcess);
+    ServiceTimer.Enabled := True; // enable service timer as it reaps complete processes
     Result := LProcess.XTBGUID;
     try
       LProcess.Execute;
@@ -74,10 +82,14 @@ begin
       LProcess.XTBErrorMessage := 'EXEC_FAILED';
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.OnExecProcessEvent(Sender: TObject; Context: TObject; Status: TRunCommandEventCode; const Message: String);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // it is kind of tempting to use this one to do everything, but there is a lot of corner cases so we still reap processes in service timer
   // at first we do not even check status, just attempt reads immediately, and only then check for possible errors
   try
@@ -87,6 +99,8 @@ begin
       if Status = RunCommandException then TTBExecProcess(Sender).XTBErrorMessage := Message;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.ReadExecProcessStreams(const inProcess: TTBExecProcess);
@@ -94,6 +108,8 @@ var
   i: Integer;
   s: String = '';
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // read streams
   try
     if Assigned(inProcess.Output) then
@@ -123,6 +139,8 @@ begin
       end;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserWindow.ServiceReapExecProcesses: Boolean;
@@ -132,6 +150,8 @@ var
   LDeleteList: TStringList;
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
 
   // check processes to be reaped
@@ -202,6 +222,8 @@ begin
     except end;
     FreeAndNil(LDeleteList);
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.KillExecProcesses;
@@ -209,6 +231,8 @@ var
   LExecProcessPair: TTBExecProcessPair;
   LProcess: TTBExecProcess;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     for LExecProcessPair in FWindowState.ExecProcesses do
     begin
@@ -226,5 +250,7 @@ begin
     end;
     FWindowState.ExecProcesses.Clear;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 

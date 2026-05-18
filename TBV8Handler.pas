@@ -1,6 +1,6 @@
 unit TBV8Handler;
 
-{$mode ObjFPC}{$modeswitch AdvancedRecords}{$H+}{$codepage utf8}
+{$INCLUDE TBTrayBrowser_Defines.inc}
 
 (*
 Licensed under BSD 3-clause license
@@ -43,7 +43,9 @@ uses
 
 function TTBV8Handler.ArgToStr(const inValue: ICefv8Value): String;
 begin
-  Result := '';
+ {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+ Result := '';
   if inValue.IsString then
     Result := String(inValue.GetStringValue)
   else if inValue.IsInt then
@@ -55,7 +57,12 @@ begin
   else if inValue.IsDouble then
     Result := FloatToStr(inValue.GetDoubleValue, TrayBrowserApplication.FormatSettings)
   else
+  begin
+    {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'invalid', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     raise Exception.Create('Argument cannot be converted to string');
+  end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTBV8Handler.ArgToMsg(const inMessage: TTBKVMessage; const inPrefix: string; const inIndex: Integer; const inValue: ICefv8Value);
@@ -66,7 +73,9 @@ var
   s: String = '';
   v: ICefv8Value;
 begin
-  LKey := inPrefix + '[' + IntToStr(inIndex) + ']';
+ {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+ LKey := inPrefix + '[' + IntToStr(inIndex) + ']';
   LTypeKey := LKey + '.TYPE';
   try
     if inValue.IsValid then
@@ -145,6 +154,8 @@ begin
     inMessage.Add(LKey, 'EXCEPTION');
     inMessage.Add(LTypeKey, 'INVALID');
   end;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTBV8Handler.TBJSCall(const inName: ustring; const inArguments: TCefv8ValueArray; var RetValue: ICefv8Value): Boolean;
@@ -152,7 +163,9 @@ var
   LMessage, LReply: TTBKVMessage;
   i: Integer;
 begin
-  // generic call case, pack all possible scalars as argument strings (!) and send, complex types are not implemented yet, booleans are packed as 0/1, the rest including null and undefined are packed as empty strings
+ {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+ // generic call case, pack all possible scalars as argument strings (!) and send, complex types are not implemented yet, booleans are packed as 0/1, the rest including null and undefined are packed as empty strings
   Result := False;
   LMessage := TTBKVMessage.Create;
   try
@@ -162,7 +175,7 @@ begin
     for i := 0 to Length(inArguments) - 1 do
       ArgToMsg(LMessage, 'ARGV', i + 1, inArguments[i]);
 
-    {$IFDEF TB_DEBUG_JS_CALL}TrayBrowserApplication.DebugLog('JS call: [' + String(inName) + '] [' + TrayBrowserRenderer.WindowId + '] ' + TrayBrowserApplication.LogKVMessage(LMessage));{$ENDIF}
+    {$IFDEF TB_DEBUG_JS_CALL}DebugLog('JS call: [' + String(inName) + '] [' + TrayBrowserRenderer.WindowId + '] ' + TrayBrowserApplication.LogKVMessage(LMessage));{$ENDIF}
     LReply := TrayBrowserZMQ.Command(TrayBrowserZMQ.ZMQDealerSocket, TrayBrowserApplication.ProcessId, 'JS_CALL', LMessage);
   except end;
   FreeAndNil(LMessage);
@@ -174,7 +187,7 @@ begin
       if LReply.ContainsKey('ERROR') then
       begin
         // got some error in
-        {$IFDEF TB_DEBUG_JS_CALL}TrayBrowserApplication.DebugLog('JS call resulted in error: ' + LReply['ERROR'], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_JS_CALL}DebugLog('JS call resulted in error: ' + LReply['ERROR'], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
       end else
       begin
         if LReply.ContainsKey('RESULT') then
@@ -224,28 +237,40 @@ begin
           Result := True;
         end else
         begin
-          {$IFDEF TB_DEBUG_JS_CALL}TrayBrowserApplication.DebugLog('Invalid JS call response: ' + TrayBrowserApplication.LogKVMessage(LReply), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_DEBUG_JS_CALL}DebugLog('Invalid JS call response: ' + TrayBrowserApplication.LogKVMessage(LReply), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
         end;
       end;
     except end;
     FreeAndNil(LReply);
   end else
   begin
-    {$IFDEF TB_DEBUG_JS_CALL}TrayBrowserApplication.DebugLog('Invalid JS call response: no reply');{$ENDIF}
+    {$IFDEF TB_DEBUG_JS_CALL}DebugLog('Invalid JS call response: no reply');{$ENDIF}
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTBV8Handler.Execute(const inName: ustring; const inObject: ICefv8Value; const inArguments: TCefv8ValueArray; var RetValue: ICefv8Value; var RetException: ustring): Boolean;
 var
   s: String;
 begin
+ {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
  Result := False;
 
  // if current renderer has API disabled, prevent executing any API as well
- if not TrayBrowserRenderer.APIEnabled then Exit;
+ if not TrayBrowserRenderer.APIEnabled then
+ begin
+   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'api disabled', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+   Exit;
+ end;
 
  // prevent executing any native JS API for iframes and other embedding types
- if not TCefv8ContextRef.Current.GetFrame.IsMain then Exit;
+ if not TCefv8ContextRef.Current.GetFrame.IsMain then
+ begin
+   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not main', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
+   Exit;
+ end;
 
  try
    case inName of
@@ -301,9 +326,9 @@ begin
          try
            s := ArgToStr(inArguments[0]);
            if Length(s) <= 4096 then
-             TrayBrowserApplication.DebugLog('JS DEBUG MESSAGE: ' + s)
+             DebugLog('JS DEBUG MESSAGE: ' + s)
            else
-             {$IFDEF TB_DEBUG_JS_CALL}TrayBrowserApplication.DebugLog('JS call: ' + String(inName) + ' string too long', CEF_LOG_SEVERITY_ERROR){$ENDIF};
+             {$IFDEF TB_DEBUG_JS_CALL}DebugLog('JS call: ' + String(inName) + ' string too long', CEF_LOG_SEVERITY_ERROR){$ENDIF};
          except end;
        end;
      end;
@@ -312,6 +337,8 @@ begin
      else Result := TBJSCall(inName, inArguments, RetValue);
    end;
  except Result := False; end;
+
+ {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 end.

@@ -1,6 +1,6 @@
 unit TBTrayBrowser;
 
-{$mode ObjFPC}{$modeswitch AdvancedRecords}{$H+}{$codepage utf8}
+{$INCLUDE TBTrayBrowser_Defines.inc}
 
 (*
 Licensed under BSD 3-clause license
@@ -19,7 +19,7 @@ interface
 
 uses
   windows, windirs, // these go first as they clash with file utils
-  Classes, SysUtils, Forms, Generics.Collections, FileUtil, LazFileUtils, StrUtils, Math,
+  Classes, SysUtils, SyncObjs, Forms, Generics.Collections, FileUtil, LazFileUtils, StrUtils, Math,
   RegExpr, sqldb, sqlite3conn, sqlite3dyn,
   uCEFApplication, uCEFConstants, uCEFMiscFunctions, uCEFInterfaces;
 
@@ -62,6 +62,12 @@ type
   TTBTrayClickMode = (tbtcNormal, tbtcRestore, tbtcShow, tbtcEvent, tbtcNone);
   TTBCLIShowMode = (tbccOnEmpty, tbccAlways, tbccNever);
 
+  TTBTraceStackElement = record
+    inRoutine: String;
+    inFile: String;
+    inLine: Integer;
+  end;
+
   TTBStringDict = specialize TDictionary<String, String>;
   TTBStringPair = specialize TPair<String, String>;
   TTBIntDict = specialize TDictionary<String, Integer>;
@@ -70,6 +76,9 @@ type
   TTBObjectPair = specialize TPair<String, TObject>;
   TTBWindowList = specialize TDictionary<String, TForm>;
   TTBWindowPair = specialize TPair<String, TForm>;
+  TTBTraceStack = specialize TList<TTBTraceStackElement>;
+  TTBThreadTraceStackList = specialize TDictionary<LongInt, TTBTraceStack>;
+  TTBThreadTraceStackPair = specialize TPair<LongInt, TTBTraceStack>;
   TTBKVMessage = TTBStringDict;
   TTBKVMessagePair = TTBStringPair;
 
@@ -304,10 +313,8 @@ type
       procedure Run;
 
       // logging, including emergency logging
-      procedure DebugLog(const inMessage: String; const inSeverity: Integer = CEF_LOG_SEVERITY_INFO);
       function LogKVMessage(const inMessage: TTBKVMessage): String;
       function LogValues(const inValues: TStringList): String;
-      procedure Die(const inMessage: String; const inCode: Integer = TB_HALT_FATAL_APPLICATION_ERROR);
 
       // settings handling
       procedure SetDefaults;
@@ -327,6 +334,75 @@ procedure TrayBrowserSynchronizeWidgetSet;
 function TrayBrowserGetApplicationName: String;
 function TrayBrowserGetVendorName: String;
 procedure TrayBrowserCEFOnBeforeChildProcessLaunch(const inCommandline: ICefCommandLine);
+procedure Die(const inMessage: String; const inCode: Integer = TB_HALT_FATAL_APPLICATION_ERROR);
+
+// global debug logging and tracing
+procedure DebugLog(const inMessage: String; const inSeverity: Integer = CEF_LOG_SEVERITY_INFO);
+
+function DebugTraceRegisterEnter(const inRoutine: String; const inFile: String; const inLine: Integer): String;
+function DebugTraceRegisterExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer): String;
+
+function DebugTracePrintObjectLeft(const inObject: TObject): String;
+function DebugTracePrintObjectRight(const inObject: TObject): String;
+function DebugTracePrintObjectRight(const inObject: TTBJSVariant): String;
+function DebugTracePrintPath(const inAction: String; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer): String;
+
+procedure DebugTraceEnter(const inRoutine: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceEnter(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceEnter(const inType: String; inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer);
+
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceExit(const inType: String; inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer);
+procedure DebugTraceExit(const inType: String; inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer);
+
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Boolean);
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Integer);
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: String);
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Float);
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: TObject);
+procedure DebugTraceExit(const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: TTBJSVariant);
+
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Boolean);
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Integer);
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: String);
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Float);
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: TObject);
+procedure DebugTraceExit(const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: TTBJSVariant);
+
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Boolean);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Integer);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: String);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Float);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: TObject);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: TTBJSVariant);
+
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Boolean);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Integer);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: String);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Float);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: TObject);
+procedure DebugTraceExit(const inObject: TObject; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: TTBJSVariant);
+
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Boolean);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Integer);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: String);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: Float);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: TObject);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inResult: TTBJSVariant);
+
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Boolean);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Integer);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: String);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: Float);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: TObject);
+procedure DebugTraceExit(const inType: String; const inPointer: Pointer; const inRoutine: String; const inPath: String; const inFile: String; const inLine: Integer; const inResult: TTBJSVariant);
+
+procedure DebugTraceMessage(const inRoutine: String; const inFile: String; const inLine: Integer; const inMessage: String);
+procedure DebugTraceMessage(const inObject: TObject; const inRoutine: String; const inFile: String; const inLine: Integer; const inMessage: String);
+procedure DebugTraceMessage(const inType: String; const inPointer: Pointer; const inRoutine: String; const inFile: String; const inLine: Integer; const inMessage: String);
 
 // windows platform specifics
 {$IFDEF WINDOWS}
@@ -347,12 +423,21 @@ implementation
 uses
  TBRootWindow, TBRenderer, TBZMQ;
 
+var
+  // debug information
+  DebugFileCS: TCriticalSection;
+  DebugThreadTrace: TTBThreadTraceStackList;
+  DebugThreadTraceCS: TCriticalSection;
+
+{$INCLUDE TBTrayBrowser_Debug.inc}
 {$INCLUDE TBTrayBrowser_Settings.inc}
 
 // application construction / destruction
 
 constructor TTrayBrowserApplication.Create;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inherited;
 
   Randomize;
@@ -396,6 +481,8 @@ begin
     ConfigureSubprocess;
     Initialized := True;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 destructor TTrayBrowserApplication.Destroy;
@@ -403,6 +490,8 @@ var
   LElement: TTBSettingElement;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   {$IFDEF TB_DEBUG}if not IsSubprocess then DebugLog('Terminating main process') else DebugLog('Terminating subprocess');{$ENDIF}
 
   if Assigned(GlobalCEFApp) then
@@ -452,6 +541,7 @@ begin
     try DeleteFile(DataPath + 'traybrowser.lock'); except end; // remove lockfile
   end;
 
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
   inherited;
 end;
 
@@ -463,6 +553,8 @@ var
   LMessage, LReply: TTBKVMessage;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := True;
 
   {$IFDEF TB_DEBUG}DebugLog('Configuring main process');{$ENDIF}
@@ -513,6 +605,7 @@ begin
         // all_is_fine.jpg
         FreeAndNil(TrayBrowserZMQ);
         Result := False;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'cmdline', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
     except end;
@@ -540,6 +633,8 @@ begin
 
   // for single process mode, also initialize renderer bits
   if Settings.SingleProcess then TTrayBrowserRenderer.Create; // initialize renderer bits for subprocesses or single process mode
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.ConfigureSubprocess;
@@ -550,6 +645,8 @@ var
   LCount: Integer;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   {$IFDEF TB_DEBUG}DebugLog('Configuring subprocess');{$ENDIF}
 
   if Settings.SingleProcess then Die('Subprocess found in single process mode');
@@ -637,6 +734,8 @@ begin
   FreeAndNil(LConfig);
   FreeAndNil(LReply);
   FreeAndNil(LMessage);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // global CEF application initialization
@@ -645,6 +744,8 @@ procedure TTrayBrowserApplication.InitGlobalCEFApplication;
 var
   s: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   GlobalCEFApp := TCefApplication.Create;
 
   GlobalCEFApp.FrameworkDirPath := UnicodeString(AppPath + 'cef' + DirectorySeparator);
@@ -709,97 +810,8 @@ begin
     GlobalCEFApp.OnBrowserCreated := @TrayBrowserRendererCEFOnBrowserCreated;
     GlobalCEFApp.OnContextCreated := @TrayBrowserRendererCEFOnContextCreated;
   end;
-end;
 
-// logging
-
-procedure TTrayBrowserApplication.DebugLog(const inMessage: String; const inSeverity: Integer = CEF_LOG_SEVERITY_INFO);
-{$IFDEF TB_INIT_DEBUG}
-var
-  LStream: TFileStream;
-  s: String;
-{$ENDIF}
-begin
-  if Assigned(GlobalCEFApp) then
-  begin
-    CefDebugLog(inMessage, inSeverity);
-  end else
-  begin
-    {$IFDEF TB_INIT_DEBUG}
-    // long and hard way...
-    try
-      if not FileExists('tbdebug.log') then LStream :=  TFileStream.Create('tbdebug.log', fmCreate or fmOpenWrite)
-        else LStream :=  TFileStream.Create('tbdebug.log', fmOpenWrite);
-      try
-        LStream.Seek(0, soEnd);
-        s := '[' + ProcessId + '] ' + inMessage + LineEnding;
-        LStream.Write(s[1], Length(s));
-      except end;
-      FreeAndNil(LStream);
-    except end;
-    {$ENDIF}
-  end;
-end;
-
-function TTrayBrowserApplication.LogKVMessage(const inMessage: TTBKVMessage): String;
-var
-  LElement: TTBKVMessagePair;
-  LKeys: TStringList;
-  LKey: String;
-  i: Integer;
-begin
-  Result := '';
-
-  if not Assigned(inMessage) then
-  begin
-    Result := '<NO MESSAGE>';
-    Exit;
-  end;
-
-  LKeys := TStringList.Create;
-  try
-    for LElement in inMessage do LKeys.Add(LElement.Key);
-    LKeys.Sort;
-    i := 0;
-    for LKey in LKeys do
-    begin
-      if i <> 0 then Result := Result + ',';
-      Result := Result + '`' + LKey + '`=`' + inMessage[LKey] + '`';
-      i := i + 1;
-    end;
-  except end;
-  FreeAndNil(LKeys);
-end;
-
-function TTrayBrowserApplication.LogValues(const inValues: TStringList): String;
-var
-  s: String;
-  i: Integer;
-begin
-  Result := '';
-
-  if not Assigned(inValues) then
-  begin
-    Result := '<NO VALUES>';
-    Exit;
-  end;
-
-  try
-    i := 0;
-    for s in inValues do
-    begin
-      if i <> 0 then Result := Result + ',';
-      Result := Result + '`' + s + '`';
-      i := i + 1;
-    end;
-  except end;
-end;
-
-procedure TTrayBrowserApplication.Die(const inMessage: String; const inCode: Integer = TB_HALT_FATAL_APPLICATION_ERROR);
-begin
-  try DebugLog(inMessage, CEF_LOG_SEVERITY_FATAL); except end;
-  {$IFDEF TB_INIT_DEBUG}if not Assigned(GlobalCEFApp) then raise Exception.Create(inMessage);{$ENDIF}
-  Halt(inCode);
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // main application startup
@@ -808,6 +820,8 @@ procedure TTrayBrowserApplication.Run;
 var
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // wait for global CEF context initialization
   i := 0;
   while (not GlobalCEFApp.GlobalContextInitialized) do
@@ -826,6 +840,8 @@ begin
   Application.Initialize;
   Application.CreateForm(TTrayBrowserRootWindow, TrayBrowserRootWindow);
   Application.Run;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // volatile directory cleanup
@@ -835,6 +851,8 @@ var
   LSearchRec: TSearchRec;
   LCurrentPathWithSlash, LCurrentSubPath, LCurrentSubPathWithSlash, LCurrentDir, LCurrentDirWithSlash, LCurrentFile, LCurrentFilePath: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LCurrentPathWithSlash := IncludeTrailingPathDelimiter(inPath);
   LCurrentSubPath := ExcludeLeadingPathDelimiter(ExcludeTrailingPathDelimiter(inSubPath));
   if LCurrentSubPath <> '' then
@@ -852,7 +870,11 @@ begin
   end;
 
   try
-    if not DirectoryExists(LCurrentDir) then Exit;
+    if not DirectoryExists(LCurrentDir) then
+    begin
+      {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'no directory', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+      Exit;
+    end;
     if FindFirst(IncludeTrailingPathDelimiter(LCurrentDir) + GetAllFilesMask, faAnyFile, LSearchRec) = 0 then
     begin
       repeat
@@ -880,6 +902,8 @@ begin
       until FindNext(LSearchRec) <> 0;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserApplication.CleanupVolatileDirectory;
@@ -888,7 +912,14 @@ var
   i: Integer;
   s: String;
 begin
-  if not Settings.ClearDataDirectory then Exit; // keep the data directory, nothing to do
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if not Settings.ClearDataDirectory then
+  begin
+    // keep the data directory, nothing to do
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'keep', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   LSkipList := TTBStringDict.Create;
   try
@@ -923,21 +954,29 @@ begin
     CleanDirectoryContents(VolatilePath, '', LSkipList);
   except end;
   FreeAndNil(LSkipList);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // child process launch command line modification (adds IPC key used to communicate with main process) handler
 
 procedure TrayBrowserCEFOnBeforeChildProcessLaunch(const inCommandline: ICefCommandLine);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inCommandline.AppendSwitchWithValue('TBApplicationID', UnicodeString(TrayBrowserApplication.ApplicationID));
   inCommandline.AppendSwitchWithValue('TBIPCKey', UnicodeString(TrayBrowserApplication.IPCKey));
   if TrayBrowserApplication.Settings.UseNativeDataDirectory then inCommandline.AppendSwitchWithValue('TBUseNativeDataDirectory', 'yes');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // application helper handlers
 
 procedure TrayBrowserSynchronizeWidgetSet;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // this is one real hack we need to synchronize with the widget system here as proper position is only available after widget system catches up with events
   // basically we need state restore messages to all be processed by widget system before we can act and thus we allow application to process window event messages
   // why? try removing this on Windows platform and switching maximized / minimized modes & hide / unhide windows in these modes, you'll quickly see what happens
@@ -945,16 +984,33 @@ begin
   Application.ProcessMessages;
   Application.ProcessMessages;
   Application.ProcessMessages;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TrayBrowserGetApplicationName: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := TrayBrowserApplication.ApplicationID;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TrayBrowserGetVendorName: String;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := '';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+end;
+
+procedure Die(const inMessage: String; const inCode: Integer = TB_HALT_FATAL_APPLICATION_ERROR);
+begin
+  try DebugLog(inMessage, CEF_LOG_SEVERITY_FATAL); except end;
+  {$IFDEF TB_INIT_DEBUG}if not Assigned(GlobalCEFApp) then raise Exception.Create(inMessage);{$ENDIF}
+  Halt(inCode);
 end;
 
 ////////////////////////////////////////////////////////////
@@ -962,40 +1018,109 @@ end;
 
 class operator TTBJSVariant.Initialize(var Rec: TTBJSVariant); inline;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter('TTBJSVariant', @Rec, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Rec.pvType := tbjvEmpty;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit('TTBJSVariant', @Rec, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTBJSVariant.SetBoolean(const inBoolean: Boolean); inline;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   pvBoolean := inBoolean;
   pvType := tbjvBoolean;
   pvString := '';
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTBJSVariant.SetInteger(const inInteger: Integer); inline;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   pvInteger := inInteger;
   pvType := tbjvInteger;
   pvString := '';
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTBJSVariant.SetFloat(const inFloat: Float); inline;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   pvFloat := inFloat;
   pvType := tbjvFloat;
   pvString := '';
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTBJSVariant.SetString(const inString: String); inline;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   pvString := inString;
   pvType := tbjvString;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTBJSVariant.SetJSON(const inString: String); inline;
 begin
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   pvString := inString;
   pvType := tbjvJson;
+
+  {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit('TTBJSVariant', @Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+end;
+
+// early module initialization and late finalization (take care: no tracing allowed here, it initializes and terminates tracing)
+
+procedure TBTrayBrowserInitialize;
+begin
+  // create debug file critical section
+  DebugFileCS := TCriticalSection.Create;
+
+  // remove local debugging file if we have init debugging enabled, but only in main process
+  {$IFDEF TB_INIT_DEBUG}
+  if not IsCEFSubprocess then try DeleteFile('tbdebug.log'); except end;
+  {$ENDIF}
+
+  // create trace stack container and critical section
+  DebugThreadTraceCS := TCriticalSection.Create;
+  DebugThreadTrace := TTBThreadTraceStackList.Create;
+end;
+
+procedure TBTrayBrowserFinalize;
+var
+  Stack: TTBThreadTraceStackPair;
+begin
+  // destroy trace stack container and critical section
+  DebugThreadTraceCS.Acquire;
+  try
+    for Stack in DebugThreadTrace do Stack.Value.Free;
+    DebugThreadTrace.Clear;
+  except end;
+  FreeAndNil(DebugThreadTrace);
+  DebugThreadTraceCS.Release;
+  FreeAndNil(DebugThreadTraceCS);
+
+  // destroy debug file critical section
+  FreeAndNil(DebugFileCS);
+end;
+
+initialization
+begin
+  TBTrayBrowserInitialize;
+end;
+
+finalization
+begin
+  TBTrayBrowserFinalize;
 end;
 
 end.

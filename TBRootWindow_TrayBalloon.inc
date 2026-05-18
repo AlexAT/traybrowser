@@ -17,6 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 procedure TTrayBrowserRootWindow.ShowBalloon(const inWindowID: String; const inHint: String; const inTitle: String; const inTimeout: Integer);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   HideBalloon;
   TrayIcon.BalloonTimeout := inTimeout;
   TrayIcon.BalloonHint := inHint;
@@ -24,10 +26,14 @@ begin
   TrayIcon.ShowBalloonHint;
   BalloonWindowID := inWindowID;
   BalloonShowing := True;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.HideBalloon;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if BalloonShowing then
   begin
     {$IFDEF WINDOWS}
@@ -40,6 +46,8 @@ begin
 
   BalloonShowing := False;
   BalloonWindowID := '';
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // custom windows-only tray notification events handling
@@ -49,35 +57,49 @@ procedure TTrayBrowserRootWindow.WMTrayBalloonClick(var Message: TMessage);
 var
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   BalloonShowing := False;
   if CheckApplicationVisibility(True) then FocusTimer.Enabled := False; // make sure we do not lose focus flag when clicking on balloon
   LWindow := TTrayBrowserWindow(GetBrowserWindow(BalloonWindowID));
   if Assigned(LWindow) then LWindow.PostJSEvent('"onballoonclick"');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.WMTrayBalloonHide(var Message: TMessage);
 var
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   BalloonShowing := False;
   if CheckApplicationVisibility(True) then FocusTimer.Enabled := False; // make sure we do not lose focus flag when clicking on balloon hide button
   LWindow := TTrayBrowserWindow(GetBrowserWindow(BalloonWindowID));
   if Assigned(LWindow) then LWindow.PostJSEvent('"onballoonhide"');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.WMTrayBalloonTimeout(var Message: TMessage);
 var
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   BalloonShowing := False;
   LWindow := TTrayBrowserWindow(GetBrowserWindow(BalloonWindowID));
   if Assigned(LWindow) then LWindow.PostJSEvent('"onballoonhide"');
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 // custom windows-only tray icon event handler that allows for windows-specific notification handling
 
 function TBTraySubWndProc(hwnd: HWND; msg: UINT; wParam: WPARAM; lParam: LPARAM; subId: UINT_PTR; refData: DWORD_PTR): LRESULT; stdcall;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if msg = WM_TRAYICON then
   begin
     case lParam of
@@ -85,6 +107,7 @@ begin
       begin
         PostMessage(TrayBrowserRootWindow.Handle, TB_MSG_BALLOONSHOW, 0, 0);
         Result := 1;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, 'balloon show', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
 
@@ -92,6 +115,7 @@ begin
       begin
         PostMessage(TrayBrowserRootWindow.Handle, TB_MSG_BALLOONHIDE, 0, 0);
         Result := 1;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, 'balloon hide', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
 
@@ -99,6 +123,7 @@ begin
       begin
         PostMessage(TrayBrowserRootWindow.Handle, TB_MSG_BALLOONTIMEOUT, 0, 0);
         Result := 1;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, 'balloon timeout', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
 
@@ -106,12 +131,15 @@ begin
       begin
         PostMessage(TrayBrowserRootWindow.Handle, TB_MSG_BALLOONCLICK, 0, 0);
         Result := 1;
+        {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, 'balloon click', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
         Exit;
       end;
     end;
   end;
 
   Result := DefSubclassProc(hwnd, msg, wParam, lParam);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit({$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 {$ENDIF}
 

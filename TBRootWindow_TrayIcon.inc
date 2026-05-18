@@ -17,6 +17,8 @@ procedure TTrayBrowserRootWindow.TrayIconClick(Sender: TObject);
 var
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if (TrayBrowserApplication.Settings.TrayIconClickMode <> tbtcNone) and (TrayBrowserApplication.Settings.TrayIconClickMode <> tbtcEvent) then
   begin
     // standard visibility and focus handling (normal / restore / show)
@@ -78,6 +80,8 @@ begin
     LWindow := TTrayBrowserWindow(GetBrowserWindow(MainWindowID));
     if Assigned(LWindow) then TTrayBrowserWindow(LWindow).PostJSEvent('"ontrayiconclick"');
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.TrayIconClickCheckMonitorChange: Boolean;
@@ -86,6 +90,8 @@ var
   LMonitor, LWMonitor: TMonitor;
   LWindowState: TWindowState;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   LMonitor := Screen.MonitorFromPoint(Mouse.CursorPos, mdNull); // grab monitor from tray icon clicked
   if Assigned(LMonitor) then
@@ -110,5 +116,7 @@ begin
       end;
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 

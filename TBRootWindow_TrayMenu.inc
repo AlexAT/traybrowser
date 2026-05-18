@@ -18,6 +18,8 @@ var
   i: Integer;
   LMenuitem: TTrayBrowserMenuItem;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LMenuitem := TTrayBrowserMenuItem.Create(TrayMenu);
   LMenuitem.Caption := inMenuText;
   LMenuitem.Enabled := True;
@@ -35,6 +37,8 @@ begin
       end;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.ClearUserMenu(const inWindowID: String);
@@ -42,6 +46,8 @@ var
   i: Integer;
   LDeleteList: specialize TList<TMenuItem>;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LDeleteList := specialize TList<TMenuItem>.Create;
   try
     if inWindowID <> '*' then
@@ -66,6 +72,8 @@ begin
   except end;
   LDeleteList.Clear;
   FreeAndNil(LDeleteList);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.UpdateMenuRetryState;
@@ -73,7 +81,14 @@ var
   LWPair: TTBWindowPair;
   LHaveError: Boolean;
 begin
-  if TrayBrowserApplication.Settings.MenuHideRetry then Exit; // requested to have this hidden, so have nothing to do
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
+  if TrayBrowserApplication.Settings.MenuHideRetry then
+  begin
+    // requested to have this hidden, so have nothing to do
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'hidden', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+    Exit;
+  end;
 
   // check all windows
   LHaveError := False;
@@ -88,17 +103,23 @@ begin
 
   // and so we have it
   TrayMenuRetry.Visible := LHaveError;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.UserMenuClick(Sender: TObject);
 var
   LWindow: TTrayBrowserWindow;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   if Assigned(Sender) and Sender.InheritsFrom(TTrayBrowserMenuItem) then
   begin
     LWindow := TTrayBrowserWindow(GetBrowserWindow(TTrayBrowserMenuItem(Sender).XTBWindowID));
     if Assigned(LWindow) then LWindow.PostJSEvent('"__callback",' + IntToStr(TTrayBrowserMenuItem(Sender).XTBCallbackID));
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.ClearMenuOrphans;
@@ -106,6 +127,8 @@ var
   i: Integer;
   LDeleteList: specialize TList<TMenuItem>;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   LDeleteList := specialize TList<TMenuItem>.Create;
   try
     for i := 0 to TrayMenu.Items.Count - 1 do
@@ -120,28 +143,42 @@ begin
   except end;
   LDeleteList.Clear;
   FreeAndNil(LDeleteList);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.TrayMenuPopup(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // if we are clicking on tray menu, prevent us from considering focus lost by this click
   FocusTimer.Enabled := False;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.TrayMenuRetryClick(Sender: TObject);
 var
   LWPair: TTBWindowPair;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   // navigate all windows in error to starting page
   for LWPair in WindowRegistry do
     if TTrayBrowserWindow(LWPair.Value).FWindowState.InLoadError then
       TTrayBrowserWindow(LWPair.Value).Navigate(TTrayBrowserWindow(LWPair.Value).FWindowSettings.URL);
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.TrayMenuExitClick(Sender: TObject);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   TrayBrowserSynchronizeWidgetSet;
   TerminateTrayBrowser;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 

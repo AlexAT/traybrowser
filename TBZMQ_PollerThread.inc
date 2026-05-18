@@ -17,8 +17,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” 
 
 constructor TTrayBrowserZMQPollerThread.Create(CreateSuspended: Boolean; const StackSize: SizeUInt = DefaultStackSize);
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   inherited;
   TrayBrowserZMQ.CreateRouterSocket;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserZMQPollerThread.ProcessMessage;
@@ -28,6 +32,8 @@ var
   LParameter: TTBStringPair;
   i: Integer;
 begin
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   case TBCommand of
     // locally processed messages
     'INIT', 'HELLO': TBReply.Add('RESULT', 'HELLO'); // renderer subprocess and window hello messages
@@ -87,6 +93,8 @@ begin
       end else TBReply.Add('ERROR', 'INVALID_COMMAND'); // if no, this is definitely an error
     end;
   end;
+
+  {$IFDEF TB_TRACE_FEE_ZMQMSG}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserZMQPollerThread.Execute;
@@ -97,13 +105,15 @@ var
   i: Integer;
   t, tt: QWord;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     LMessage := TStringList.Create;
     LResponse := TStringList.Create;
     TBRequest := TTBKVMessage.Create;
     TBReply := TTBKVMessage.Create;
 
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ poller thread started');{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ poller thread started');{$ENDIF}
 
     while not (Terminated or Application.Terminated) do
     begin
@@ -114,7 +124,7 @@ begin
       TBReply.Clear;
 
       // poll until ZMQ ROUTER socket has something
-      {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ r/poll start');{$ENDIF}
+      {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ r/poll start');{$ENDIF}
       t := GetTickCount64;
       while not (Terminated or Application.Terminated) do
       begin
@@ -130,7 +140,7 @@ begin
         end;
       end;
       if Terminated or Application.Terminated then Break; // well, here we can already be in terminated state
-      {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ r/poll done');{$ENDIF}
+      {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ r/poll done');{$ENDIF}
 
       // receive ZMQ message (ROUTER connection ID, msgid, IPC key, cmd, fields count, fields)
       LMessage := TrayBrowserZMQ.ReceiveMultipart(TrayBrowserZMQ.ZMQRouterSocket);
@@ -155,7 +165,7 @@ begin
             except
               i := -1; // this will always fail on the next check
               if LResponse.Count = 0 then LResponse.Add('ERROR INVALID_SIZE_FIELD'); // we deliberately send one-liner errors to make receiver err on runt message and not desynchronize
-              {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request error: unparseable argument count: ' + LMessage[4], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+              {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request error: unparseable argument count: ' + LMessage[4], CEF_LOG_SEVERITY_ERROR);{$ENDIF}
             end;
 
             // check message size with arguments
@@ -170,7 +180,7 @@ begin
                   i := i + 2;
                 end;
 
-                {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request received: [' + LHexID + '] [' + LMessage[1] + '] [' + LMessage[3] + '] ' + TrayBrowserApplication.LogKVMessage(TBRequest));{$ENDIF}
+                {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request received: [' + LHexID + '] [' + LMessage[1] + '] [' + LMessage[3] + '] ' + TrayBrowserApplication.LogKVMessage(TBRequest));{$ENDIF}
 
                 // process message
                 try
@@ -179,7 +189,7 @@ begin
                 except
                   // ProcessMessage should not cause any exceptions, if it did, we return corresponding error
                   TBReply.Add('ERROR', 'INTERNAL_ERROR');
-                  {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request processing error: internal error', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+                  {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request processing error: internal error', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
                 end;
 
                 // build reply message
@@ -196,36 +206,36 @@ begin
                 // this is tricky, our caller definitely expects response and we theoretically may send normal error, but exceptions here are rare and can be caused by i.e. request/reply processing, so we send one-liner there
                 LResponse.Clear;
                 LResponse.Add('ERROR INTERNAL_ERROR'); // we deliberately send one-liner errors to make receiver err on runt message and not desynchronize
-                {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request error: internal error', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+                {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request error: internal error', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
               end;
             end else
             begin
               if LResponse.Count = 0 then
               begin
                 LResponse.Add('ERROR INVALID_MESSAGE_SIZE'); // we deliberately send one-liner errors to make receiver err on runt message and not desynchronize
-                {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request error: invalid message size: expected ' + IntToStr((i * 2) + 4) + ' got ' + IntToStr(LMessage.Count - 1), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+                {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request error: invalid message size: expected ' + IntToStr((i * 2) + 4) + ' got ' + IntToStr(LMessage.Count - 1), CEF_LOG_SEVERITY_ERROR);{$ENDIF}
               end;
             end;
           end else
           begin
             if LResponse.Count = 0 then LResponse.Add('ERROR INVALID_IPC_KEY'); // we deliberately send one-liner errors to make receiver err on runt message and not desynchronize
-            {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request error: invalid IPC key', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+            {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request error: invalid IPC key', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
           end;
         end else
         begin
           if LResponse.Count = 0 then LResponse.Add('ERROR INVALID_MESSAGE_SIZE'); // we deliberately send one-liner errors to make receiver err on runt message and not desynchronize
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request error: runt message', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request error: runt message', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
         end;
 
         if LResponse.Count = 0 then
         begin
           // should not happen, but we fill in just in case
           LResponse.Add('ERROR INTERNAL_ERROR');
-          {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request processing error: somehow the reply is empty', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+          {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request processing error: somehow the reply is empty', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
         end;
 
         // poll until ZMQ ROUTER socket allows to send something
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ w/poll start');{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ w/poll start');{$ENDIF}
         t := GetTickCount64;
         while not (Terminated or Application.Terminated) do
         begin
@@ -233,10 +243,10 @@ begin
           Yield; // relinquish some time to idle
           tt := GetTickCount64;
           if (t > tt) then t := tt; // handle overflows, this prolongs timeout, but okay, that is rare
-          if (tt - t) > TrayBrowserZMQ.ZMQPollTimeout then TrayBrowserApplication.Die('ZMQ w/poll timeout', TB_HALT_ZMQ_PROTOCOL_ERROR); // timed out, this potentially leads to protocol desynchronization so we halt here
+          if (tt - t) > TrayBrowserZMQ.ZMQPollTimeout then Die('ZMQ w/poll timeout', TB_HALT_ZMQ_PROTOCOL_ERROR); // timed out, this potentially leads to protocol desynchronization so we halt here
         end;
         if Terminated or Application.Terminated then Break;
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ w/poll done');{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ w/poll done');{$ENDIF}
 
         // send the reply
         LResponse.Insert(0, LMessage[0]); // prepend ROUTER connection ID
@@ -244,22 +254,24 @@ begin
         begin
           if LResponse.Count >= 5 then // on fatal receive errors, we never send normal sized messages
           begin
-            {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ reply sent: [' + LHexID + '] [' + LMessage[1] + '] [' + LMessage[3] + '] ' + TrayBrowserApplication.LogKVMessage(TBReply));{$ENDIF}
+            {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ reply sent: [' + LHexID + '] [' + LMessage[1] + '] [' + LMessage[3] + '] ' + TrayBrowserApplication.LogKVMessage(TBReply));{$ENDIF}
           end else
           begin
             LResponse.Delete(0);
-            {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ error reply sent: [' + LHexID + ']' + TrayBrowserApplication.LogValues(LResponse));{$ENDIF}
+            {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ error reply sent: [' + LHexID + ']' + TrayBrowserApplication.LogValues(LResponse));{$ENDIF}
           end;
-        end else TrayBrowserApplication.Die('ZMQ failed to send reply message', TB_HALT_ZMQ_PROTOCOL_ERROR); // failed to send reply message, this potentially leads to protocol desynchronization so we halt here
+        end else Die('ZMQ failed to send reply message', TB_HALT_ZMQ_PROTOCOL_ERROR); // failed to send reply message, this potentially leads to protocol desynchronization so we halt here
       end else
       begin
-        {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ request processing error: failed to receive message', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
+        {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ request processing error: failed to receive message', CEF_LOG_SEVERITY_ERROR);{$ENDIF}
       end;
     end;
-    {$IFDEF TB_DEBUG_ZMQ}TrayBrowserApplication.DebugLog('ZMQ poller thread exited');{$ENDIF}
+    {$IFDEF TB_DEBUG_ZMQ}DebugLog('ZMQ poller thread exited');{$ENDIF}
   except
     // um, our listener thread must never terminate with exception while we are functioning, we are as good as dead
-    TrayBrowserApplication.Die('ZMQ poller thread died', TB_HALT_ZMQ_POLLER_THREAD_DIED);
+    Die('ZMQ poller thread died', TB_HALT_ZMQ_POLLER_THREAD_DIED);
   end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 

@@ -17,12 +17,14 @@ procedure TTrayBrowserRootWindow.InitKVStore;
 var
   LError: PChar;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try
     try
       KVDB.DatabaseName := TrayBrowserApplication.DataPath + 'kvstore.sqlite3';
       KVDB.OpenFlags := [sofCreate, sofReadWrite, sofFullMutex];
       KVDB.Open;
-    except TrayBrowserApplication.Die('Failed to initialize volatile database storage'); end;
+    except Die('Failed to initialize volatile database storage'); end;
 
     // we really do ignore any errors here, this may bite us in the leg somewhere but these are really not showstoppers
     sqlite3_exec(KVDB.Handle, 'PRAGMA locking_mode = EXCLUSIVE', nil, nil, @LError);
@@ -41,7 +43,7 @@ begin
         KVQuery.SQL.Text := 'CREATE TABLE IF NOT EXISTS kvstore (key PRIMARY KEY, value)';
         KVQuery.ExecSQL;
         KVTransaction.Commit;
-      except TrayBrowserApplication.Die('Failed to initialize volatile database storage'); end;
+      except Die('Failed to initialize volatile database storage'); end;
     end;
 
     // create user kvstore
@@ -56,7 +58,7 @@ begin
         KVQuery.SQL.Text := 'CREATE TABLE IF NOT EXISTS kvuser (key PRIMARY KEY, value)';
         KVQuery.ExecSQL;
         KVTransaction.Commit;
-      except TrayBrowserApplication.Die('Failed to initialize volatile database storage'); end;
+      except Die('Failed to initialize volatile database storage'); end;
     end;
 
     // final verification
@@ -77,11 +79,15 @@ begin
         KVTransaction.Commit;
       except end;
     end;
-  except TrayBrowserApplication.Die('Failed to initialize volatile database storage'); end;
+  except Die('Failed to initialize volatile database storage'); end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.KVStoreRead(const inTable: String; const inKey: String; out outValue: String): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     KVQuery.SQL.Text := 'SELECT value FROM "' + ReplaceStr(inTable, '"', '""') + '" WHERE key = :k';
@@ -95,10 +101,14 @@ begin
     end;
     KVQuery.Close;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.KVStoreWrite(const inTable: String; const inKey: String; const inValue: String; const inCommit: Boolean = True): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     KVQuery.SQL.Text := 'INSERT INTO "' + ReplaceStr(inTable, '"', '""') + '" (key, value) VALUES (:k,:v) ON CONFLICT DO UPDATE SET value = excluded.value';
@@ -108,10 +118,14 @@ begin
     if inCommit then KVTransaction.Commit;
     Result := True;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.KVStoreDelete(const inTable: String; const inKey: String; const inCommit: Boolean = True): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     KVQuery.SQL.Text := 'DELETE FROM "' + ReplaceStr(inTable, '"', '""') + '" WHERE key = :k';
@@ -121,20 +135,32 @@ begin
     if inCommit then KVTransaction.Commit;
     Result := True;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.KVStoreCommit;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try KVTransaction.Commit; except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 procedure TTrayBrowserRootWindow.KVStoreRollback;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   try KVTransaction.Rollback; except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.MemoryKVStoreRead(const inKey: String; out outValue: String): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     if MemoryKVStore.ContainsKey(inKey) then
@@ -143,19 +169,27 @@ begin
       Result := True;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.MemoryKVStoreWrite(const inKey: String; const inValue: String): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     MemoryKVStore.AddOrSetValue(inKey, inValue);
     Result := True;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 function TTrayBrowserRootWindow.MemoryKVStoreDelete(const inKey: String): Boolean;
 begin
+  {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
+
   Result := False;
   try
     if MemoryKVStore.ContainsKey(inKey) then
@@ -164,5 +198,7 @@ begin
       Result := True;
     end;
   except end;
+
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
