@@ -104,7 +104,7 @@ begin
       begin
         try
           LStream.Seek(0, soEnd);
-          s := '[' + IntToStr(GetProcessID) + '] ' + inMessage + LineEnding;
+          s := '[' + DateTimeToStr(Now, DefaultFormatSettings, True) + '] [' + IntToStr(GetProcessID) + '] ' + inMessage + LineEnding;
           LStream.Write(s[1], Length(s));
         except end;
         FreeAndNil(LStream);

@@ -1114,7 +1114,6 @@ begin
   FBrowserSize := FWindowSettings.Size;
   FIsBrowserRestarting := True;
   if Assigned(Chromium) then Chromium.CloseAllBrowsers;
-  PositionOurselves;
 
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;

@@ -365,7 +365,9 @@ begin
   // the target bounds has been build, check if we need to change anything
   if LTargetBounds <> BoundsRect then
   begin
-    if Assigned(Chromium) then Chromium.NotifyMoveOrResizeStarted;
+    try
+      if Assigned(Chromium) and Chromium.HasValidMainFrame and (not FExit.Requested) and (not FIsBrowserRestarting) then Chromium.NotifyMoveOrResizeStarted;
+    except end;
     FInManualPositionChange := True;
     if (not FRememberedPosition.Active) then
     begin

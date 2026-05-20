@@ -277,7 +277,10 @@ begin
   {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
   inherited;
-  if Assigned(Chromium) then Chromium.NotifyMoveOrResizeStarted;
+
+  try
+    if Assigned(Chromium) and Chromium.HasValidMainFrame and (not FExit.Requested) and (not FIsBrowserRestarting) then Chromium.NotifyMoveOrResizeStarted;
+  except end;
 
   {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;

@@ -22,7 +22,7 @@ procedure TTrayBrowserWindow.Navigate(const inURL: String);
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  if FInitialized and Assigned(Chromium) and Chromium.HasValidMainFrame and (not FExit.Requested) then
+  if FInitialized and Assigned(Chromium) and Chromium.HasValidMainFrame and (not FExit.Requested) and (not FIsBrowserRestarting) then
   begin
     case inURL of
       TB_ABOUT_URL:
@@ -266,6 +266,7 @@ procedure TTrayBrowserWindow.BrowserCreatedMsg(var Message: TMessage);
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
+  PositionOurselves; // make sure our window positioning is correct
   CEFBrowser.UpdateSize; // this is required for browser to catch up with actual initial component sizing
   if FWindowSettings.Main and not FIsWindowRestarted and TrayBrowserApplication.Settings.ClearCache then Chromium.ClearHttpCache(False); // reduce application footprint by clearing cache when main window starts for the first time
   Navigate(FWindowSettings.URL); // load default page
