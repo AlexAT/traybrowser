@@ -776,6 +776,18 @@ begin
       // in case of '*' in NoOverride command line will still be parsed correcly but settings will not be applied
       if not NoOverride.ContainsKey('commandline') then
       begin
+        // the first parameter may be configuration file name
+        try
+          if (CommandLine[0] <> '--') then
+          begin
+            if FileExists(CommandLine[0]) then
+            begin
+              ReadSettingsFromFile(IncludeTrailingPathDelimiter(CleanAndExpandDirectory(ExtractFilePath(CommandLine[0]))), ExtractFileName(CommandLine[0]), '', inConfig);
+              CommandLine.Delete(0);
+            end;
+          end;
+        except end;
+
         // the first parameter may be http:// or https:// URL
         try
           if (CommandLine[0] <> '--') then
@@ -785,18 +797,6 @@ begin
             if LRegexp.Exec(CommandLine[0]) then
             begin
               inConfig.AddOrSetValue('url', CommandLine[0]);
-              CommandLine.Delete(0);
-            end;
-          end;
-        except end;
-
-        // the first parameter may be configuration file name
-        try
-          if (CommandLine[0] <> '--') then
-          begin
-            if FileExists(CommandLine[0]) then
-            begin
-              ReadSettingsFromFile(IncludeTrailingPathDelimiter(CleanAndExpandDirectory(ExtractFilePath(CommandLine[0]))), ExtractFileName(CommandLine[0]), '', inConfig);
               CommandLine.Delete(0);
             end;
           end;
