@@ -61,6 +61,7 @@ type
   TTBStartMonitorMode = (tbsmDefault, tbsmMain, tbsmID, tbsmXY);
   TTBTrayClickMode = (tbtcNormal, tbtcRestore, tbtcShow, tbtcEvent, tbtcNone);
   TTBCLIShowMode = (tbccOnEmpty, tbccAlways, tbccNever);
+  TTBEnableGPU = (tbegOn, tbegOff, tbegOffForced);
 
   TTBTraceStackElement = record
     inRoutine: String;
@@ -231,7 +232,7 @@ type
     ConserveResources: Boolean;
     ConservativeCache: Boolean;
     Copyright: String;
-    EnableGPU: Boolean;
+    EnableGPU: TTBEnableGPU;
     EnableHangMonitor: Boolean;
     GracefulExitTime: Integer;
     Hint: String;
@@ -775,7 +776,7 @@ begin
   GlobalCEFApp.NoDefaultBrowserCheck := True; // nope, we do not want to become default browser
   GlobalCEFApp.EnableAutomation := False; // and no, no automation
   GlobalCEFApp.EnablePrintPreview := True;
-  GlobalCEFApp.EnableGPU := Settings.EnableGPU;
+  GlobalCEFApp.EnableGPU := (Settings.EnableGPU = tbegOn);
   GlobalCEFApp.KioskPrinting := Settings.AutoPrint;
   GlobalCEFApp.SetCurrentDir := False; // no, we do not want this
   GlobalCEFApp.EnableSpeechInput := True; // seems obsolete, but enabling for safety
@@ -785,7 +786,7 @@ begin
 
   // add explicit command line options to be used in subprocesses as we are running with CommandLineArgsDisabled=true
   if Settings.AutoPrint then GlobalCEFApp.AddCustomCommandLine('kiosk-printing');
-  if not Settings.EnableGPU then GlobalCEFApp.AddCustomCommandLine('disable-gpu');
+  if Settings.EnableGPU <> tbegOn then GlobalCEFApp.AddCustomCommandLine('disable-gpu');
   if Settings.ConservativeCache then GlobalCEFApp.AddCustomCommandLine('aggressive-cache-discard');
   GlobalCEFApp.AddCustomCommandLine('disable-javascript-access-clipboard'); // no, we do not want applications to randomly monitor clipboard
   GlobalCEFApp.AddCustomCommandLine('disable-javascript-dom-paste'); // no DOM paste access

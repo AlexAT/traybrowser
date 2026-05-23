@@ -28,11 +28,22 @@ begin
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.ConservativeCache,             'ConservativeCache',       True,                                 [tbsefApplication,tbsefProcessInit,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.ConserveResources,             'ConserveResources',       False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.Copyright,                     'Copyright',               TB_COPYRIGHT_STRING,   250,           [tbsefApplication,tbsefProcessInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.EnableGPU,                     'EnableGPU',               True,                                 [tbsefApplication,tbsefProcessInit,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.EnableHangMonitor,             'EnableHangMonitor',       False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.Title,                         'Caption',                 TB_TITLE_STRING,       250,           [tbsefApplication,tbsefProcessInit,tbsefNoEmpty,tbsefProtected,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Caption first, Title overrides
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.Title,                         'Title',                   TB_TITLE_STRING,       250,           [tbsefApplication,tbsefProcessInit,tbsefNoEmpty,tbsefProtected])); // alias, order matters: Caption first, Title overrides
   SettingsList.Add(TTBSettingElement.Create(@TempSettings.UserAgent,                     'UserAgent',               '%DEFAULT%',           1000,          [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.EnableGPU,               'EnableGPU',               Integer(tbegOn),                      [tbsefApplication,tbsefProcessInit,tbsefProtected],
+    [
+      SettingChoiceDef(Integer(tbegOn), 'yes'),
+      SettingChoiceDef(Integer(tbegOff), 'no'),
+      SettingChoiceDef(Integer(tbegOffForced), 'forcedoff')
+    ],[
+      SettingChoiceDef(Integer(tbegOff), 'no'), SettingChoiceDef(Integer(tbegOff), '-'), SettingChoiceDef(Integer(tbegOff), 'none'), SettingChoiceDef(Integer(tbegOff), 'off'), SettingChoiceDef(Integer(tbegOff), 'false'), SettingChoiceDef(Integer(tbegOff), 'disable'), SettingChoiceDef(Integer(tbegOff), 'disabled'), SettingChoiceDef(Integer(tbegOff), 'inactive'), SettingChoiceDef(Integer(tbegOff), 'passive'), SettingChoiceDef(Integer(tbegOff), '0'),
+      SettingChoiceDef(Integer(tbegOn), '+'), SettingChoiceDef(Integer(tbegOn), 'yes'), SettingChoiceDef(Integer(tbegOn), 'on'), SettingChoiceDef(Integer(tbegOn), 'true'), SettingChoiceDef(Integer(tbegOn), 'enable'), SettingChoiceDef(Integer(tbegOn), 'enabled'), SettingChoiceDef(Integer(tbegOn), 'active'), SettingChoiceDef(Integer(tbegOn), '1'),
+      SettingChoiceDef(Integer(tbegOffForced), 'forcedoff')
+    ]
+  ));
 
   SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.ScalingMode,             'ScalingMode',             Integer(tbscNormal),                  [tbsefApplication,tbsefProcessInit,tbsefProtected],
     [
@@ -192,7 +203,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice( @TempWindowSettings.LoadErrorPage,    'LoadErrorPage',           Integer(tbleInternal),                [tbsefWindow,tbsefProtected],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.LoadErrorPage,     'LoadErrorPage',           Integer(tbleInternal),                [tbsefWindow,tbsefProtected],
     [
       SettingChoiceDef(Integer(tbleInternal), 'internal'),
       SettingChoiceDef(Integer(tbleBrowser), 'browser')
@@ -202,7 +213,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice( @TempWindowSettings.MaximizeMode,     'MaximizeMode',            Integer(tbmaNone),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.MaximizeMode,      'MaximizeMode',            Integer(tbmaNone),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbmaNone), 'none'),
       SettingChoiceDef(Integer(tbmaOS), 'os'),
@@ -214,7 +225,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice( @TempWindowSettings.MinimizeMode,     'MinimizeMode',            Integer(tbmiNone),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.MinimizeMode,      'MinimizeMode',            Integer(tbmiNone),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbmiNone), 'none'),
       SettingChoiceDef(Integer(tbmiHide), 'hide'),
@@ -228,7 +239,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice( @TempWindowSettings.RememberPosition, 'RememberPosition',        Integer(tbrpFull),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.RememberPosition,  'RememberPosition',        Integer(tbrpFull),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbrpNone), 'no'),
       SettingChoiceDef(Integer(tbrpFull), 'full'),
@@ -240,7 +251,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice( @TempWindowSettings.SnapTo,           'SnapTo',                  Integer(tbstNone),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.SnapTo,            'SnapTo',                  Integer(tbstNone),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbstNone), 'none'),
       SettingChoiceDef(Integer(tbstTray), 'tray'),
@@ -362,6 +373,12 @@ begin
    '', 'default': TempSettings.UserAgent := '%DEFAULT%'; // empty user agent also means we use default
    'browser': TempSettings.UserAgent := '%BROWSER%';
   end;
+
+  // there is a very special setting of EnableGPU that can be overridden by creating '.disable_gpu' file under data directory, honor it
+  try
+    if (TempSettings.EnableGPU = tbegOffForced) then TempSettings.EnableGPU := tbegOn; // nope, no undefined behavior allowed
+    if (TempSettings.EnableGPU = tbegOn) and FileExists(DataPath + '.disable_gpu') then TempSettings.EnableGPU := tbegOffForced;
+  except end;
 
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
@@ -595,11 +612,6 @@ begin
   Application.Hint := Settings.Hint;
 
   FreeAndNil(LConfig);
-
-  // there is a very special setting of EnableGPU that can be overridden by creating '.disable_gpu' file under data directory, honor it
-  try
-    if FileExists(DataPath + '.disable_gpu') then Settings.EnableGPU := False;
-  except end;
 
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;

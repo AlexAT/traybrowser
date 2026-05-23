@@ -1235,6 +1235,7 @@ end;
 function TTrayBrowserWindow.jsSetApplicationSettings(const inArgc: Integer; const inRequest: TTBKVMessage): TTBJSVariant;
 var
   LSettings: TTBStringDict;
+  LElement: TTBSettingElement;
   kv: TTBStringPair;
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
@@ -1256,6 +1257,38 @@ begin
     TrayBrowserApplication.FixupSettings(LSettings);
     TrayBrowserApplication.Settings := TrayBrowserApplication.TempSettings;
     TrayBrowserRootWindow.ApplySettings;
+
+    // handle special cases
+    for LElement in TrayBrowserApplication.SettingsList do
+    begin
+      if tbsefApplication in LElement.Flags then
+      begin
+        if LElement.NameLC = 'enablegpu' then
+        begin
+          // 'EnableGPU' setting can be forced down and forced back up
+          if LSettings.ContainsKey(LElement.NameLC) then
+          begin
+            LElement.ApplyConfig(LSettings); // apply setting in question
+            if (TrayBrowserApplication.Settings.EnableGPU = tbegOn) and (TrayBrowserApplication.TempSettings.EnableGPU = tbegOffForced) then
+            begin
+              // requested to forcibly disable GPU acceleration, create '.disable_gpu' file and disable acceleration flag internally
+              try
+                TFileStream.Create(TrayBrowserApplication.DataPath + '.disable_gpu', fmCreate or fmOpenWrite).Free;
+                TrayBrowserApplication.Settings.EnableGPU := tbegOffForced;
+              except end;
+            end else if (TrayBrowserApplication.Settings.EnableGPU = tbegOffForced) and (TrayBrowserApplication.TempSettings.EnableGPU = tbegOn) then
+            begin
+              // requested to reenable GPU acceleration, remove '.disable_gpu' file and enable acceleration flag internally
+              try
+                DeleteFile(TrayBrowserApplication.DataPath + '.disable_gpu');
+                TrayBrowserApplication.Settings.EnableGPU := tbegOn;
+              except end;
+            end;
+          end;
+        end;
+      end;
+    end;
+
     Result.vBoolean := True;
   except end;
   FreeAndNil(LSettings);
