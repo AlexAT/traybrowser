@@ -89,7 +89,7 @@ begin
     DebugFileCS.Acquire;
     try
       // as file may be locked, we retry a little (this may still fail long term, but better than nothing)
-      i := 1000;
+      i := 100;
       while i > 0 do
       begin
         try

@@ -596,6 +596,11 @@ begin
 
   FreeAndNil(LConfig);
 
+  // there is a very special setting of EnableGPU that can be overridden by creating '.disable_gpu' file under data directory, honor it
+  try
+    if FileExists(DataPath + '.disable_gpu') then Settings.EnableGPU := False;
+  except end;
+
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
@@ -767,17 +772,14 @@ begin
     for i := 1 to ParamCount do CommandLine.Add(ParamStr(i));
     if CommandLine.Count > 0 then
     begin
+      // we disable command line argument parsing only if NoOverride explicitly contains 'commandline'
+      // in case of '*' in NoOverride command line will still be parsed correcly but settings will not be applied
       if not NoOverride.ContainsKey('commandline') then
       begin
+        // the first parameter may be http:// or https:// URL
         try
-          // the first parameter may be configuration file name
-          if FileExists(CommandLine[0]) then
+          if (CommandLine[0] <> '--') then
           begin
-            ReadSettingsFromFile(IncludeTrailingPathDelimiter(CleanAndExpandDirectory(ExtractFilePath(CommandLine[0]))), ExtractFileName(CommandLine[0]), '', inConfig);
-            CommandLine.Delete(0);
-          end else
-          begin
-            // also the first parameter may be http:// or https:// URL
             LRegexp.Expression := '^https?://';
             LRegexp.ModifierStr := 'isg-m-r-x';
             if LRegexp.Exec(CommandLine[0]) then
@@ -786,8 +788,22 @@ begin
               CommandLine.Delete(0);
             end;
           end;
+        except end;
 
-          // the rest of settings is parsed for key=value combination
+        // the first parameter may be configuration file name
+        try
+          if (CommandLine[0] <> '--') then
+          begin
+            if FileExists(CommandLine[0]) then
+            begin
+              ReadSettingsFromFile(IncludeTrailingPathDelimiter(CleanAndExpandDirectory(ExtractFilePath(CommandLine[0]))), ExtractFileName(CommandLine[0]), '', inConfig);
+              CommandLine.Delete(0);
+            end;
+          end;
+        except end;
+
+        // the rest of settings is parsed for key=value combination
+        try
           LRegexp.Expression := '^\s*([0-9a-z]+)\s*\=(.*)$';
           LRegexp.ModifierStr := 'isg-m-r-x';
           while (CommandLine.Count > 0) and LRegexp.Exec(CommandLine[0]) do
@@ -799,10 +815,12 @@ begin
         except end;
       end;
 
-      if (CommandLine.Count > 0) and (CommandLine[0] = '--') then CommandLine.Delete(0); // remove first encountered '--' parameter
+      if (CommandLine.Count > 0) and (CommandLine[0] = '--') then CommandLine.Delete(0); // remove '--' parameter if it exists first after settings parse
+
+      // remove excessive number of parameters
       if (CommandLine.Count > TB_MAX_CMDLINE_PARAMS) then
         for i := CommandLine.Count - 1 downto TB_MAX_CMDLINE_PARAMS do
-          CommandLine.Delete(i); // remove excessive number of parameters
+          CommandLine.Delete(i);
     end;
   except end;
   FreeAndNil(LNoOverrideAdd);
@@ -819,7 +837,7 @@ begin
   {$IFDEF TB_TRACE_FEE_INSANE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
   s := LowerCase(inKey);
-  if not NoOverride.ContainsKey(s) then
+  if not (NoOverride.ContainsKey('*') or NoOverride.ContainsKey(s)) then
   begin
     // handle empty keys and multi-value parameters that can be encountered more than once
     case s of
