@@ -18,22 +18,22 @@ begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
   // early initialization
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ApplicationID,                 'ApplicationID',           TB_ID_STRING,          64,            [tbsefApplication,tbsefInit,tbsefNoEmpty,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.UseNativeDataDirectory,        'UseNativeDataDirectory',  False,                                [tbsefApplication,tbsefInit,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowDebug,                    'AllowDebug',              False,                                [tbsefApplication,tbsefInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.SingleProcess,                 'SingleProcess',           False,                                [tbsefApplication,tbsefInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ApplicationID,                 'ApplicationID',                  TB_ID_STRING,          64,            [tbsefApplication,tbsefInit,tbsefNoEmpty,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.UseNativeDataDirectory,        'UseNativeDataDirectory',         False,                                [tbsefApplication,tbsefInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowDebug,                    'AllowDebug',                     False,                                [tbsefApplication,tbsefInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.SingleProcess,                 'SingleProcess',                  False,                                [tbsefApplication,tbsefInit,tbsefProtected,tbsefInvisible]));
 
   // process initialization
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AutoPrint,                     'AutoPrint',               False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ConservativeCache,             'ConservativeCache',       True,                                 [tbsefApplication,tbsefProcessInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ConserveResources,             'ConserveResources',       False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Copyright,                     'Copyright',               TB_COPYRIGHT_STRING,   250,           [tbsefApplication,tbsefProcessInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.EnableHangMonitor,             'EnableHangMonitor',       False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Title,                         'Caption',                 TB_TITLE_STRING,       250,           [tbsefApplication,tbsefProcessInit,tbsefNoEmpty,tbsefProtected,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Caption first, Title overrides
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Title,                         'Title',                   TB_TITLE_STRING,       250,           [tbsefApplication,tbsefProcessInit,tbsefNoEmpty,tbsefProtected])); // alias, order matters: Caption first, Title overrides
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.UserAgent,                     'UserAgent',               '%DEFAULT%',           1000,          [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AutoPrint,                     'AutoPrint',                      False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ConservativeCache,             'ConservativeCache',              True,                                 [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ConserveResources,             'ConserveResources',              False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Copyright,                     'Copyright',                      TB_COPYRIGHT_STRING,   250,           [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.EnableHangMonitor,             'EnableHangMonitor',              False,                                [tbsefApplication,tbsefProcessInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Title,                         'Caption',                        TB_TITLE_STRING,       250,           [tbsefApplication,tbsefProcessInit,tbsefNoEmpty,tbsefProtected,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Caption first, Title overrides
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Title,                         'Title',                          TB_TITLE_STRING,       250,           [tbsefApplication,tbsefProcessInit,tbsefNoEmpty,tbsefProtected])); // alias, order matters: Caption first, Title overrides
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.UserAgent,                     'UserAgent',                      '%DEFAULT%',           1000,          [tbsefApplication,tbsefProcessInit,tbsefProtected]));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.EnableGPU,               'EnableGPU',               Integer(tbegOn),                      [tbsefApplication,tbsefProcessInit,tbsefProtected],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.EnableGPU,               'EnableGPU',                      Integer(tbegOn),                      [tbsefApplication,tbsefProcessInit,tbsefProtected],
     [
       SettingChoiceDef(Integer(tbegOn), 'yes'),
       SettingChoiceDef(Integer(tbegOff), 'no'),
@@ -45,7 +45,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.ScalingMode,             'ScalingMode',             Integer(tbscNormal),                  [tbsefApplication,tbsefProcessInit,tbsefProtected],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.ScalingMode,             'ScalingMode',                    Integer(tbscNormal),                  [tbsefApplication,tbsefProcessInit,tbsefProtected],
     [
       SettingChoiceDef(Integer(tbscNormal), 'normal'),
       SettingChoiceDef(Integer(tbscFloor), 'floor'),
@@ -60,25 +60,26 @@ begin
   ));
 
   // application
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowExec,                     'AllowExec',               False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowSystemInfo,               'AllowSystemInfo',         True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AutoHide,                      'AutoHide',                False,                                [tbsefApplication,tbsefApplicationInit]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearCache,                    'ClearCache',              True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearDataDirectory,            'ClearDataDirectory',      False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearKVStore,                  'ClearKVStore',            False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Hint,                          'Hint',                    TB_TITLE_STRING,       250,           [tbsefApplication,tbsefApplicationInit]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.KeepCookies,                   'KeepCookies',             True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.KeepStorage,                   'KeepStorage',             False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuDisable,                   'MenuDisable',             False,                                [tbsefApplication,tbsefApplicationInit]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuExitCaption,               'MenuExitCaption',         TB_MENU_EXIT_STRING,   250,           [tbsefApplication,tbsefApplicationInit,tbsefNoEmpty]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuHideExit,                  'MenuHideExit',            False,                                [tbsefApplication,tbsefApplicationInit]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuHideRetry,                 'MenuHideRetry',           False,                                [tbsefApplication,tbsefApplicationInit]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuRetryCaption,              'MenuRetryCaption',        TB_MENU_RETRY_STRING,  250,           [tbsefApplication,tbsefApplicationInit,tbsefNoEmpty]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.RetryInterval,                 'RetryInterval',           15,                    1, 86400,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ShowTrayIcon,                  'ShowTrayIcon',            True,                                 [tbsefApplication,tbsefApplicationInit]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.URL,                           'URL',                     TB_ABOUT_URL,          16384,         [tbsefApplication,tbsefApplicationInit,tbsefNoClamp,tbsefNoEmpty,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowExec,                     'AllowExec',                      False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AllowSystemInfo,               'AllowSystemInfo',                True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.AutoHide,                      'AutoHide',                       False,                                [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearCache,                    'ClearCache',                     True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearDataDirectory,            'ClearDataDirectory',             False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ClearKVStore,                  'ClearKVStore',                   False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Hint,                          'Hint',                           TB_TITLE_STRING,       250,           [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.IgnoreAllCertificateErrors,    'IgnoreAllCertificateErrors',     False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.KeepCookies,                   'KeepCookies',                    True,                                 [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.KeepStorage,                   'KeepStorage',                    False,                                [tbsefApplication,tbsefApplicationInit,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuDisable,                   'MenuDisable',                    False,                                [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuExitCaption,               'MenuExitCaption',                TB_MENU_EXIT_STRING,   250,           [tbsefApplication,tbsefApplicationInit,tbsefNoEmpty]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuHideExit,                  'MenuHideExit',                   False,                                [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuHideRetry,                 'MenuHideRetry',                  False,                                [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.MenuRetryCaption,              'MenuRetryCaption',               TB_MENU_RETRY_STRING,  250,           [tbsefApplication,tbsefApplicationInit,tbsefNoEmpty]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.RetryInterval,                 'RetryInterval',                  15,                    1, 86400,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ShowTrayIcon,                  'ShowTrayIcon',                   True,                                 [tbsefApplication,tbsefApplicationInit]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.URL,                           'URL',                            TB_ABOUT_URL,          16384,         [tbsefApplication,tbsefApplicationInit,tbsefNoClamp,tbsefNoEmpty,tbsefProtected]));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.ShowOnCLI,               'ShowOnCLI',               Integer(tbccOnEmpty),                 [tbsefApplication,tbsefApplicationInit],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.ShowOnCLI,               'ShowOnCLI',                      Integer(tbccOnEmpty),                 [tbsefApplication,tbsefApplicationInit],
     [
       SettingChoiceDef(Integer(tbccOnEmpty), 'empty'),
       SettingChoiceDef(Integer(tbccAlways), 'always'),
@@ -90,7 +91,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.TrayIconClickMode,       'TrayIconClickMode',       Integer(tbtcNormal),                  [tbsefApplication,tbsefApplicationInit],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.TrayIconClickMode,       'TrayIconClickMode',              Integer(tbtcNormal),                  [tbsefApplication,tbsefApplicationInit],
     [
       SettingChoiceDef(Integer(tbtcNormal), 'normal'),
       SettingChoiceDef(Integer(tbtcRestore), 'restore'),
@@ -107,12 +108,12 @@ begin
   ));
 
   // application settings that are actually just defaults for window settings that need to be remembered
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Size.Width,                    'Width',                   450,                   1, 65535,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Size.Height,                   'Height',                  350,                   1, 65535,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.GracefulExitTime,              'GracefulExitTime',        1,                     1, 86400,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ScaleAlignmentMax,             'ScaleAlignmentMax',       128,                   1, 1024,       [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Size.Width,                    'Width',                          450,                   1, 65535,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.Size.Height,                   'Height',                         350,                   1, 65535,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.GracefulExitTime,              'GracefulExitTime',               1,                     1, 86400,      [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempSettings.ScaleAlignmentMax,             'ScaleAlignmentMax',              128,                   1, 1024,       [tbsefApplication,tbsefApplicationInit,tbsefProtected]));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.LoadErrorPage,           'LoadErrorPage',           Integer(tbleInternal),                [tbsefApplication,tbsefApplicationInit,tbsefProtected],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempSettings.LoadErrorPage,           'LoadErrorPage',                  Integer(tbleInternal),                [tbsefApplication,tbsefApplicationInit,tbsefProtected],
     [
       SettingChoiceDef(Integer(tbleInternal), 'internal'),
       SettingChoiceDef(Integer(tbleBrowser), 'browser')
@@ -123,43 +124,43 @@ begin
   ));
 
   // window
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Movable,                 'Movable',                 True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Sizeable,                'Sizable',                 False,                                [tbsefWindow,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Sizable first, Sizeable overrides
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Sizeable,                'Sizeable',                False,                                [tbsefWindow,tbsefRestart])); // alias, order matters: Sizable first, Sizeable overrides
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Size.Width,              'Width',                   450,                   1, 65535,      [tbsefWindow,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Size.Height,             'Height',                  350,                   1, 65535,      [tbsefWindow,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowCopy,               'AllowCopy',               True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowDownload,           'AllowDownload',           True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowPaste,              'AllowPaste',              True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowPrint,              'AllowPrint',              False,                                [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowReload,             'AllowReload',             True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowSearch,             'AllowSearch',             True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AlwaysOnTop,             'AlwaysOnTop',             False,                                [tbsefWindow,tbsefRestart]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.APIEnabled,              'APIEnabled',              True,                                 [tbsefWindow,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.BorderMargin,            'BorderMargin',            0,                     0, 65535,      [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Caption,                 'Title',                   '',                    250,           [tbsefWindow,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Title first, Caption overrides
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Caption,                 'Caption',                 '',                    250,           [tbsefWindow])); // alias, order matters: Title first, Caption overrides
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ClampToMonitor,          'ClampToMonitor',          True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.CloseButton,             'CloseButton',             True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.GracefulExitTime,        'GracefulExitTime',        1,                     1, 86400,      [tbsefWindow,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.IgnoreCertificateErrors, 'IgnoreCertificateErrors', False,                                [tbsefWindow,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.KeepHidden,              'KeepHidden',              False,                                [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.MaximizeButton,          'MaximizeButton',          False,                                [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.MinimizeButton,          'MinimizeButton',          False,                                [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Parameters,              'Parameters',              '',                    16384,         [tbsefWindow,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.PositionID,              'PositionID',              '',                    1024,          [tbsefWindow,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.RememberSize,            'RememberSize',            False,                                [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.RestoreOnShow,           'RestoreOnShow',           True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ScaleAlignmentMax,       'ScaleAlignmentMax',       128,                   1, 1024,       [tbsefWindow,tbsefProtected,tbsefInvisible]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ShowOnStart,             'ShowOnStart',             True,                                 [tbsefWindow,tbsefProtected]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ShowOnTaskBar,           'ShowOnTaskbar',           True,                                 [tbsefWindow,tbsefRestart]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.SnapToFollowTrayClick,   'SnapToFollowTrayClick',   True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.SnapToWindows,           'SnapToWindows',           True,                                 [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.SnapToWindowsDistance,   'SnapToWindowsDistance',   16,                    1, 128,        [tbsefWindow]));
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.StartMonitorText,        'StartMonitor',            '',                    16,            [tbsefWindow,tbsefProtected])); // complex setting that is parsed in FixupWindowSettings
-  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.URL,                     'URL',                     TB_ABOUT_URL,          16384,         [tbsefWindow,tbsefNoClamp,tbsefNoEmpty]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Movable,                 'Movable',                        True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Sizeable,                'Sizable',                        False,                                [tbsefWindow,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Sizable first, Sizeable overrides
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Sizeable,                'Sizeable',                       False,                                [tbsefWindow,tbsefRestart])); // alias, order matters: Sizable first, Sizeable overrides
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Size.Width,              'Width',                          450,                   1, 65535,      [tbsefWindow,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Size.Height,             'Height',                         350,                   1, 65535,      [tbsefWindow,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowCopy,               'AllowCopy',                      True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowDownload,           'AllowDownload',                  True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowPaste,              'AllowPaste',                     True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowPrint,              'AllowPrint',                     False,                                [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowReload,             'AllowReload',                    True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AllowSearch,             'AllowSearch',                    True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.AlwaysOnTop,             'AlwaysOnTop',                    False,                                [tbsefWindow,tbsefRestart]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.APIEnabled,              'APIEnabled',                     True,                                 [tbsefWindow,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.BorderMargin,            'BorderMargin',                   0,                     0, 65535,      [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Caption,                 'Title',                          '',                    250,           [tbsefWindow,tbsefNoPrint,tbsefInvisible])); // alias, order matters: Title first, Caption overrides
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Caption,                 'Caption',                        '',                    250,           [tbsefWindow])); // alias, order matters: Title first, Caption overrides
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ClampToMonitor,          'ClampToMonitor',                 True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.CloseButton,             'CloseButton',                    True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.GracefulExitTime,        'GracefulExitTime',               1,                     1, 86400,      [tbsefWindow,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.IgnoreCertificateErrors, 'IgnoreCertificateErrors',        False,                                [tbsefWindow,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.KeepHidden,              'KeepHidden',                     False,                                [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.MaximizeButton,          'MaximizeButton',                 False,                                [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.MinimizeButton,          'MinimizeButton',                 False,                                [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.Parameters,              'Parameters',                     '',                    16384,         [tbsefWindow,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.PositionID,              'PositionID',                     '',                    1024,          [tbsefWindow,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.RememberSize,            'RememberSize',                   False,                                [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.RestoreOnShow,           'RestoreOnShow',                  True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ScaleAlignmentMax,       'ScaleAlignmentMax',              128,                   1, 1024,       [tbsefWindow,tbsefProtected,tbsefInvisible]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ShowOnStart,             'ShowOnStart',                    True,                                 [tbsefWindow,tbsefProtected]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.ShowOnTaskBar,           'ShowOnTaskbar',                  True,                                 [tbsefWindow,tbsefRestart]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.SnapToFollowTrayClick,   'SnapToFollowTrayClick',          True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.SnapToWindows,           'SnapToWindows',                  True,                                 [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.SnapToWindowsDistance,   'SnapToWindowsDistance',          16,                    1, 128,        [tbsefWindow]));
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.StartMonitorText,        'StartMonitor',                   '',                    16,            [tbsefWindow,tbsefProtected])); // complex setting that is parsed in FixupWindowSettings
+  SettingsList.Add(TTBSettingElement.Create(@TempWindowSettings.URL,                     'URL',                            TB_ABOUT_URL,          16384,         [tbsefWindow,tbsefNoClamp,tbsefNoEmpty]));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.Border,            'Border',                  Integer(tbbtWindow),                  [tbsefWindow,tbsefRestart],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.Border,            'Border',                         Integer(tbbtWindow),                  [tbsefWindow,tbsefRestart],
     [
       SettingChoiceDef(Integer(tbbtNormal), 'normal'),
       SettingChoiceDef(Integer(tbbtBorderless), 'borderless'),
@@ -171,7 +172,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.CloseMode,         'CloseMode',               Integer(tbcmExit),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.CloseMode,         'CloseMode',                      Integer(tbcmExit),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbcmNone), 'none'),
       SettingChoiceDef(Integer(tbcmHide), 'hide'),
@@ -187,7 +188,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.FullScreen,        'Fullscreen',              Integer(tbfsNone),                    [tbsefWindow,tbsefRestart],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.FullScreen,        'Fullscreen',                     Integer(tbfsNone),                    [tbsefWindow,tbsefRestart],
     [
       SettingChoiceDef(Integer(tbfsNone), 'no'),
       SettingChoiceDef(Integer(tbfsWindow), 'window'),
@@ -203,7 +204,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.LoadErrorPage,     'LoadErrorPage',           Integer(tbleInternal),                [tbsefWindow,tbsefProtected],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.LoadErrorPage,     'LoadErrorPage',                  Integer(tbleInternal),                [tbsefWindow,tbsefProtected],
     [
       SettingChoiceDef(Integer(tbleInternal), 'internal'),
       SettingChoiceDef(Integer(tbleBrowser), 'browser')
@@ -213,7 +214,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.MaximizeMode,      'MaximizeMode',            Integer(tbmaNone),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.MaximizeMode,      'MaximizeMode',                   Integer(tbmaNone),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbmaNone), 'none'),
       SettingChoiceDef(Integer(tbmaOS), 'os'),
@@ -225,7 +226,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.MinimizeMode,      'MinimizeMode',            Integer(tbmiNone),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.MinimizeMode,      'MinimizeMode',                   Integer(tbmiNone),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbmiNone), 'none'),
       SettingChoiceDef(Integer(tbmiHide), 'hide'),
@@ -239,7 +240,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.RememberPosition,  'RememberPosition',        Integer(tbrpFull),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.RememberPosition,  'RememberPosition',               Integer(tbrpFull),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbrpNone), 'no'),
       SettingChoiceDef(Integer(tbrpFull), 'full'),
@@ -251,7 +252,7 @@ begin
     ]
   ));
 
-  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.SnapTo,            'SnapTo',                  Integer(tbstNone),                    [tbsefWindow],
+  SettingsList.Add(TTBSettingElement.CreateChoice(@TempWindowSettings.SnapTo,            'SnapTo',                         Integer(tbstNone),                    [tbsefWindow],
     [
       SettingChoiceDef(Integer(tbstNone), 'none'),
       SettingChoiceDef(Integer(tbstTray), 'tray'),

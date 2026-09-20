@@ -329,21 +329,21 @@ end;
 ////////////////////////////////////////////////////////////
 // command and action limits
 
-procedure TTrayBrowserWindow.ChromiumCanDownload(Sender: TObject; const browser: ICefBrowser; const url, request_method: ustring; var aResult: Boolean);
+procedure TTrayBrowserWindow.ChromiumCanDownload(Sender: TObject; const browser: ICefBrowser; const url, request_method: ustring; var Result: Boolean);
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  aResult := False;
+  Result := False;
 
   if (not Assigned(Chromium)) or (not Chromium.IsSameBrowser(browser)) then
   begin
-    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
-  aResult := FWindowSettings.AllowDownload;
+  Result := FWindowSettings.AllowDownload;
 
-  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.ChromiumCertificateError(Sender: TObject; const browser: ICefBrowser; certError: TCefErrorcode; const requestUrl: ustring; const sslInfo: ICefSslInfo;
@@ -362,30 +362,30 @@ begin
 end;
 
 procedure TTrayBrowserWindow.ChromiumBeforeDownload(Sender: TObject; const browser: ICefBrowser; const downloadItem: ICefDownloadItem; const suggestedName: ustring;
-  const callback: ICefBeforeDownloadCallback; var aResult: Boolean);
+  const callback: ICefBeforeDownloadCallback; var Result: Boolean);
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  aResult := False;
+  Result := False;
 
   if (not Assigned(Chromium)) or (not Chromium.IsSameBrowser(browser)) then
   begin
-    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
-  aResult := True;
+  Result := True;
 
   if not FWindowSettings.AllowDownload then
   begin
-    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not allowed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not allowed', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
   // force download dialog
   callback.Cont(UnicodeString(TrayBrowserApplication.RunPath), True);
 
-  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.ChromiumBeforePopup(Sender: TObject; const browser: ICefBrowser; const frame: ICefFrame; popup_id: Integer; const targetUrl, targetFrameName: ustring;
@@ -425,15 +425,15 @@ begin
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
-procedure TTrayBrowserWindow.ChromiumChromeCommand(Sender: TObject; const browser: ICefBrowser; command_id: Integer; disposition: TCefWindowOpenDisposition; var aResult: Boolean);
+procedure TTrayBrowserWindow.ChromiumChromeCommand(Sender: TObject; const browser: ICefBrowser; command_id: Integer; disposition: TCefWindowOpenDisposition; var Result: Boolean);
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  aResult := False; // allow by default
+  Result := False; // allow by default
 
   if (not Assigned(Chromium)) or (not Chromium.IsSameBrowser(browser)) then
   begin
-    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+    {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, 'not eligible', {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
     Exit;
   end;
 
@@ -443,25 +443,25 @@ begin
       if not FExit.Requested then
       begin
         // request close operation
-        aResult := True;
+        Result := True;
         PostMessage(Handle, WM_CLOSE, 0, 0);
       end;
     end;
 
-    IDC_RELOAD,IDC_RELOAD_BYPASSING_CACHE,IDC_RELOAD_CLEARING_CACHE: aResult := not FWindowSettings.AllowReload;
-    IDC_FIND,IDC_FIND_NEXT,IDC_FIND_PREVIOUS,IDC_CLOSE_FIND_OR_STOP: aResult := not FWindowSettings.AllowSearch;
-    IDC_CUT,IDC_COPY: aResult := not FWindowSettings.AllowCopy;
-    IDC_PASTE: aResult := not FWindowSettings.AllowPaste;
-    IDC_PRINT: aResult := not FWindowSettings.AllowPrint;
-    IDC_FOCUS_WEB_CONTENTS_PANE: aResult := False;
+    IDC_RELOAD,IDC_RELOAD_BYPASSING_CACHE,IDC_RELOAD_CLEARING_CACHE: Result := not FWindowSettings.AllowReload;
+    IDC_FIND,IDC_FIND_NEXT,IDC_FIND_PREVIOUS,IDC_CLOSE_FIND_OR_STOP: Result := not FWindowSettings.AllowSearch;
+    IDC_CUT,IDC_COPY: Result := not FWindowSettings.AllowCopy;
+    IDC_PASTE: Result := not FWindowSettings.AllowPaste;
+    IDC_PRINT: Result := not FWindowSettings.AllowPrint;
+    IDC_FOCUS_WEB_CONTENTS_PANE: Result := False;
 
     IDC_DEV_TOOLS, IDC_DEV_TOOLS_CONSOLE, IDC_DEV_TOOLS_INSPECT, IDC_DEV_TOOLS_TOGGLE:
-    {$IFNDEF TB_DEBUG}if not TrayBrowserApplication.Settings.AllowDebug then aResult := True{$ENDIF};
+    {$IFNDEF TB_DEBUG}if not TrayBrowserApplication.Settings.AllowDebug then Result := True{$ENDIF};
 
-    else aResult := True; // disallow everything else
+    else Result := True; // disallow everything else
   end;
 
-  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, aResult);{$ENDIF}
+  {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%}, Result);{$ENDIF}
 end;
 
 procedure TTrayBrowserWindow.ChromiumPreKeyEvent(Sender: TObject; const browser: ICefBrowser; const event: PCefKeyEvent; osEvent: TCefEventHandle; out isKeyboardShortcut: Boolean; out Result: Boolean);
@@ -539,15 +539,15 @@ begin
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 end;
 
-procedure TTrayBrowserWindow.ChromiumOnShowPermissionPrompt(Sender: TObject; const browser: ICefBrowser; prompt_id: uint64; const requesting_origin: ustring; requested_permissions: cardinal; const callback: ICefPermissionPromptCallback; var aResult: Boolean);
+procedure TTrayBrowserWindow.ChromiumOnShowPermissionPrompt(Sender: TObject; const browser: ICefBrowser; prompt_id: uint64; const requesting_origin: ustring; requested_permissions: cardinal; const callback: ICefPermissionPromptCallback; var Result: Boolean);
 begin
   {$IFDEF TB_TRACE_FEE}DebugTraceEnter(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}
 
-  aResult := False;
+  Result := False;
   if (requested_permissions and CEF_PERMISSION_TYPE_NOTIFICATIONS) <> 0 then
   begin
     callback.Cont(CEF_PERMISSION_RESULT_ACCEPT);
-    aResult := True;
+    Result := True;
   end;
 
   {$IFDEF TB_TRACE_FEE}DebugTraceExit(Self, {$INCLUDE %CURRENTROUTINE%}, {$INCLUDE %FILE%}, {$INCLUDE %LINENUM%});{$ENDIF}

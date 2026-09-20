@@ -274,7 +274,7 @@ begin
             // floor down to scaling alignment, we would get over screen size otherwise
             DivMod(LBrowserSize.Width, FMonitorInfo.ScalingAlignment, LDivResult, LDivRemainder);
             LBrowserSize.Width := LDivResult * FMonitorInfo.ScalingAlignment;
-            DivMod(LBrowserSize.Width, FMonitorInfo.ScalingAlignment, LDivResult, LDivRemainder);
+            DivMod(LBrowserSize.Height, FMonitorInfo.ScalingAlignment, LDivResult, LDivRemainder);
             LBrowserSize.Height := LDivResult * FMonitorInfo.ScalingAlignment;
           end else
           begin
@@ -346,12 +346,12 @@ begin
               if LPosition.X < (FMonitorInfo.WorkArea.Left + LBorderMargins.Width) then
                 LPosition.X := FMonitorInfo.WorkArea.Left + LBorderMargins.Width
               else if (LPosition.X + LCompensatedSize.Width) > (FMonitorInfo.WorkArea.Right - LBorderMargins.Width) then
-                LPosition.X := FMonitorInfo.WorkArea.Right - LCompensatedSize.Width - LBorderMargins.Width;
+                LPosition.X := FMonitorInfo.WorkArea.Right - LCompensatedSize.Width + LBorderMargins.Width; // LSizeCompensation.Width contains 2 x LBorderMargins.Width, so we compensate one back
 
               if LPosition.Y < (FMonitorInfo.WorkArea.Top + LBorderMargins.Height) then
                 LPosition.Y := FMonitorInfo.WorkArea.Top + LBorderMargins.Height
               else if (LPosition.Y + LCompensatedSize.Height) > (FMonitorInfo.WorkArea.Bottom - LBorderMargins.Height) then
-                LPosition.Y := FMonitorInfo.WorkArea.Bottom - LCompensatedSize.Height - LBorderMargins.Height;
+                LPosition.Y := FMonitorInfo.WorkArea.Bottom - LCompensatedSize.Height + LBorderMargins.Height; // LSizeCompensation.Height contains 2 x LBorderMargins.Height, so we compensate one back
             end;
           end;
         end;
@@ -392,8 +392,8 @@ begin
       try
         if (FWindowSettings.Main or (FWindowSettings.PositionID <> '')) then
         begin
-          TrayBrowserRootWindow.KVStoreWrite('kvstore', 'window.px[' + IfThen(FWindowSettings.Main, '', FWindowSettings.PositionID) + ']', IntToStr(Left), False);
-          TrayBrowserRootWindow.KVStoreWrite('kvstore', 'window.py[' + IfThen(FWindowSettings.Main, '', FWindowSettings.PositionID) + ']', IntToStr(Top), False);
+          TrayBrowserRootWindow.KVStoreWrite('kvstore', 'window.px[' + IfThen(FWindowSettings.Main, '', FWindowSettings.PositionID) + ']', IntToStr(LTargetBounds.Left), False);
+          TrayBrowserRootWindow.KVStoreWrite('kvstore', 'window.py[' + IfThen(FWindowSettings.Main, '', FWindowSettings.PositionID) + ']', IntToStr(LTargetBounds.Top), False);
         end;
         try TrayBrowserRootWindow.KVStoreCommit; finally end;
       except
@@ -404,10 +404,10 @@ begin
     FLastPosition.Window.Location := BoundsRect.Location;
 
     PostJSEvent('"onpositionchange"'
-      + ',' + IntToStr(IfThen(FRememberedPosition.Active, FRememberedPosition.Window.Left - FRememberedPosition.Monitor.Left, Left - FMonitorInfo.WorkArea.Left)) // on-monitor pixel left
-      + ',' + IntToStr(IfThen(FRememberedPosition.Active, FRememberedPosition.Window.Top - FRememberedPosition.Monitor.Top, Top - FMonitorInfo.WorkArea.Top)) // on-monitor pixel top
-      + ',' + IntToStr(Left) // screen pixel left
-      + ',' + IntToStr(Top) // screen pixel top
+      + ',' + IntToStr(IfThen(FRememberedPosition.Active, FRememberedPosition.Window.Left - FRememberedPosition.Monitor.Left, LTargetBounds.Left - FMonitorInfo.WorkArea.Left)) // on-monitor pixel left
+      + ',' + IntToStr(IfThen(FRememberedPosition.Active, FRememberedPosition.Window.Top - FRememberedPosition.Monitor.Top, LTargetBounds.Top - FMonitorInfo.WorkArea.Top)) // on-monitor pixel top
+      + ',' + IntToStr(LTargetBounds.Left) // screen pixel left
+      + ',' + IntToStr(LTargetBounds.Top) // screen pixel top
     );
   end;
 

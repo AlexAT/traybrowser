@@ -236,6 +236,7 @@ type
     EnableHangMonitor: Boolean;
     GracefulExitTime: Integer;
     Hint: String;
+    IgnoreAllCertificateErrors: Boolean;
     KeepCookies: Boolean;
     KeepStorage: Boolean;
     LoadErrorPage: TTBLoadErrorMode;
@@ -777,6 +778,7 @@ begin
   GlobalCEFApp.EnableAutomation := False; // and no, no automation
   GlobalCEFApp.EnablePrintPreview := True;
   GlobalCEFApp.EnableGPU := (Settings.EnableGPU = tbegOn);
+  GlobalCEFApp.IgnoreCertificateErrors := Settings.IgnoreAllCertificateErrors;
   GlobalCEFApp.KioskPrinting := Settings.AutoPrint;
   GlobalCEFApp.SetCurrentDir := False; // no, we do not want this
   GlobalCEFApp.EnableSpeechInput := True; // seems obsolete, but enabling for safety
